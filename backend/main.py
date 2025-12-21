@@ -1,0 +1,204 @@
+from fastapi import FastAPI, HTTPException
+from contextlib import asynccontextmanager
+from backend.database import init_db, close_db
+from backend.repositories.factory import DatabaseFactory
+from backend.llm import GeminiService
+from typing import List, Optional, Any
+from pydantic import BaseModel
+from datetime import datetime
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Initialize Service
+gemini_service = GeminiService()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await init_db()
+    yield
+    await close_db()
+
+app = FastAPI(title="TreeChat API", lifespan=lifespan)
+
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176", "http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/")
+async def root():
+    return {"message": "TreeChat Backend is Running"}
+
+# --- Pydantic Models for Requests ---
+class CreateSessionRequest(BaseModel):
+    title: Optional[str] = "New Chat"
+
+class MessageRequest(BaseModel):
+    session_id: str
+    parent_id: Optional[str] = None
+    content: str
+    role: str = "user" # primarily user, but maybe system
+    model: str = "gpt-4"
+
+# --- Pydantic Models for Responses ---
+class SessionResponse(BaseModel):
+    id: str
+    title: str
+    created_at: datetime
+    last_active_node_id: Optional[str] = None
+
+class ChatNodeResponse(BaseModel):
+    id: str
+    session_id: str
+    parent_id: Optional[str] = None
+    role: str
+    content: str
+    path: List[str]
+    model: Optional[str]
+    created_at: datetime
+    is_merge_summary: bool = False
+    merge_source_branch_id: Optional[str] = None
+
+class ChatResponse(BaseModel):
+    user_node: ChatNodeResponse
+    assistant_node: Optional[ChatNodeResponse] = None
+
+# --- Helper Functions ---
+def get_repositories():
+    """Get database repositories"""
+    db = DatabaseFactory.get_database()
+    return db.get_session_repository(), db.get_chat_node_repository()
+
+# --- Endpoints ---
+
+@app.post("/sessions", response_model=SessionResponse)
+async def create_session(request: CreateSessionRequest):
+    session_repo, _ = get_repositories()
+    session = await session_repo.create(title=request.title)
+    return SessionResponse(**session)
+
+@app.get("/sessions", response_model=List[SessionResponse])
+async def list_sessions():
+    session_repo, _ = get_repositories()
+    sessions = await session_repo.list_all()
+    return [SessionResponse(**s) for s in sessions]
+
+@app.post("/chat/message", response_model=ChatResponse)
+async def send_message(request: MessageRequest):
+    session_repo, node_repo = get_repositories()
+
+    # 1. Fetch parent path if parent_id exists
+    path = []
+    if request.parent_id:
+        parent = await node_repo.get(request.parent_id)
+        if not parent:
+            raise HTTPException(status_code=404, detail="Parent node not found")
+        path = parent["path"] + [parent["id"]]
+
+    # 2. Create User Node
+    user_node = await node_repo.create(
+        session_id=request.session_id,
+        parent_id=request.parent_id,
+        role=request.role,
+        content=request.content,
+        path=path,
+        model=request.model
+    )
+
+    # Update session last active
+    session = await session_repo.get(request.session_id)
+    if session:
+        await session_repo.update(request.session_id, {"last_active_node_id": user_node["id"]})
+
+    # 3. AI Response
+    assistant_path = path + [user_node["id"]]
+
+    # Fetch history for context
+    # Fetch ancestors
+    all_node_ids = user_node["path"] + [user_node["id"]]
+    history_nodes_list = await node_repo.find_by_ids(all_node_ids)
+
+    # Sort by created_at
+    history_nodes_list.sort(key=lambda x: x["created_at"])
+    
+    # Call LLM
+    # 3. Log LLM Call (System Node)
+    system_path = path + [user_node["id"]]
+    # Create a summary of the call
+    call_log = f"Invoking Model: gemini-pro\nContext Length: {len(history_nodes_list)} messages"
+
+    system_node = await node_repo.create(
+        session_id=request.session_id,
+        parent_id=user_node["id"],
+        role="system",
+        content=call_log,
+        path=system_path,
+        model="system"
+    )
+
+    # Update session title if it's the first real message (or title is default)
+    if session and session["title"] == "New Chat":
+        # Generate a title from the user content (truncate to 40 chars)
+        new_title = request.content[:40] + ("..." if len(request.content) > 40 else "")
+        await session_repo.update(request.session_id, {"title": new_title})
+
+    # Update path for assistant to be child of system node
+    assistant_path = system_path + [system_node["id"]]
+
+    llm_response_text = await gemini_service.generate_response(history_nodes_list, request.content)
+
+    assistant_node = await node_repo.create(
+        session_id=request.session_id,
+        parent_id=system_node["id"],
+        role="assistant",
+        content=llm_response_text,
+        path=assistant_path,
+        model="gemini-pro"
+    )
+
+    # Update session again to point to assistant
+    if session:
+        await session_repo.update(request.session_id, {"last_active_node_id": assistant_node["id"]})
+
+    return ChatResponse(
+        user_node=ChatNodeResponse(**user_node),
+        assistant_node=ChatNodeResponse(**assistant_node)
+    )
+
+@app.get("/chat/history/{node_id}", response_model=List[ChatNodeResponse])
+async def get_history(node_id: str):
+    _, node_repo = get_repositories()
+
+    node = await node_repo.get(node_id)
+    if not node:
+        raise HTTPException(status_code=404, detail="Node not found")
+
+    # Fetch all ancestors
+    ancestor_ids = node["path"]
+
+    # We also include the current node in the history
+    all_ids = ancestor_ids + [node["id"]]
+
+    try:
+        history = await node_repo.find_by_ids(all_ids)
+    except:
+        raise HTTPException(status_code=400, detail="Invalid ID format in path")
+
+    # Sort by creation time to ensure linear order
+    history.sort(key=lambda x: x["created_at"])
+
+    return [ChatNodeResponse(**h) for h in history]
+
+@app.get("/session/{session_id}/tree", response_model=List[ChatNodeResponse])
+async def get_session_tree(session_id: str):
+    _, node_repo = get_repositories()
+    nodes = await node_repo.find_by_session(session_id)
+    return [ChatNodeResponse(**n) for n in nodes]
+
