@@ -1,6 +1,6 @@
-# stepback.dev 🌳💬
+# stepback.dev
 
-A conversational AI application that organizes chats as **tree structures**, allowing you to explore multiple conversation branches from any point in the dialogue. Unlike traditional linear chat interfaces, stepback.dev lets you create and navigate branching conversations, making it perfect for exploring different ideas, comparing AI responses, or maintaining multiple context threads.
+A git-style conversational AI application that lets you branch off during any chat to ask tangential questions without polluting your main conversation context. Unlike traditional linear chat interfaces, stepback.dev enables you to create branches for side explorations, work through them for any number of turns, then compact and merge them back into your original conversation thread. This level of fine-grained context control and branching is not available in any other chat system.
 
 **Website:** [www.stepback.dev](https://www.stepback.dev) (work in progress)
 **Contact:** [hello@stepback.dev](mailto:hello@stepback.dev)
@@ -9,17 +9,19 @@ A conversational AI application that organizes chats as **tree structures**, all
 
 ### Current Features
 
-- 🌲 **Tree-Based Conversations** - Create branching dialogue paths from any message
-- 🤖 **AI-Powered Responses** - Integrated with Google Gemini 2.5 Flash for intelligent responses
-- 🎨 **Interactive UI** - React-based frontend with ReactFlow tree visualization
-- 💾 **Session Management** - Create, list, and manage multiple chat sessions
-- 📜 **Linear History View** - Retrieve conversation history along any branch
-- 🗂️ **Full Tree Visualization** - Interactive node graph powered by ReactFlow
-- 🔄 **Database Flexibility** - Easy switching between MongoDB and Google Cloud Firestore
-- 🎯 **Context-Aware AI** - AI maintains context along each conversation branch
-- 📊 **System Logging** - Track AI invocations and context length for debugging
-- 🎭 **Modern UI** - Built with React 19, TailwindCSS, and Zustand state management
-- 📝 **Markdown Support** - Rich text rendering with syntax highlighting
+- **Git-Style Branching** - Branch off from any point in a conversation to ask tangential questions
+- **Context Isolation** - Side branches don't pollute your main conversation context
+- **Branch Compaction** - Compact and merge branch explorations back into the main thread
+- **AI-Powered Responses** - Integrated with Google Gemini 2.5 Flash for intelligent responses
+- **Interactive UI** - React-based frontend with ReactFlow graph visualization
+- **Session Management** - Create, list, and manage multiple chat sessions
+- **Linear History View** - Retrieve conversation history along any branch path
+- **Full Graph Visualization** - Interactive node graph powered by ReactFlow
+- **Database Flexibility** - Easy switching between MongoDB and Google Cloud Firestore
+- **Context-Aware AI** - AI maintains context along each conversation branch
+- **System Logging** - Track AI invocations and context length for debugging
+- **Modern UI** - Built with React 19, TailwindCSS, and Zustand state management
+- **Markdown Support** - Rich text rendering with syntax highlighting
 
 ### Architecture Highlights
 
@@ -375,4 +377,4 @@ For questions, suggestions, or discussions:
 
 ---
 
-**Happy Tree Chatting! 🌳💬**
+**Happy Branching!**
