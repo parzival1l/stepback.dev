@@ -98,6 +98,29 @@ async def list_sessions():
     sessions = await session_repo.list_all()
     return [SessionResponse(**s) for s in sessions]
 
+@app.delete("/sessions/{session_id}")
+async def delete_session(session_id: str):
+    session_repo, node_repo = get_repositories()
+
+    # Check if session exists
+    session = await session_repo.get(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    # Delete all chat nodes associated with this session
+    nodes = await node_repo.find_by_session(session_id)
+    for node in nodes:
+        node_id = node.get("id") or node.get("_id")
+        if node_id:
+            await node_repo.delete(node_id)
+
+    # Delete the session
+    success = await session_repo.delete(session_id)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to delete session")
+
+    return {"message": "Session deleted successfully"}
+
 @app.post("/chat/message", response_model=ChatResponse)
 async def send_message(request: MessageRequest):
     session_repo, node_repo = get_repositories()

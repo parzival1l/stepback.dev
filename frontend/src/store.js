@@ -71,6 +71,37 @@ export const useChatStore = create((set, get) => ({
         }
     },
 
+    deleteSession: async (sessionId) => {
+        try {
+            const res = await fetch(`http://localhost:8000/sessions/${sessionId}`, {
+                method: "DELETE"
+            });
+            if (!res.ok) {
+                throw new Error("Failed to delete session");
+            }
+            set(state => {
+                const deletedSessionId = sessionId;
+                const newSessions = state.sessions.filter(s => (s._id || s.id) !== deletedSessionId);
+
+                // If deleted session was active, switch to first available session or clear
+                const wasActive = state.currentSessionId === deletedSessionId;
+                const newCurrentSessionId = wasActive
+                    ? (newSessions.length > 0 ? (newSessions[0]._id || newSessions[0].id) : null)
+                    : state.currentSessionId;
+
+                // Clear history if we deleted the active session
+                return {
+                    sessions: newSessions,
+                    currentSessionId: newCurrentSessionId,
+                    ...(wasActive ? { activeNodeId: null, rootId: null, tree: {} } : {})
+                };
+            });
+        } catch (err) {
+            console.error("Failed to delete session", err);
+            throw err;
+        }
+    },
+
     addNode: (node) => set((state) => ({
         tree: { ...state.tree, [node._id || node.id]: node },
         activeNodeId: node._id || node.id // Auto-switch to new node

@@ -1,21 +1,65 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useChatStore } from '../store';
-import { MessageSquare, Plus, Trash2, ChevronRight, ChevronLeft } from 'lucide-react';
+import { MessageSquare, Plus, Trash2, ChevronRight, ChevronLeft, MoreVertical } from 'lucide-react';
 
 const API_URL = "http://localhost:8000";
 
 const SessionSidebar = ({ isCollapsed, onToggleCollapse }) => {
-    const { sessions, currentSessionId, setSession, loadHistory, fetchSessions, createSession } = useChatStore();
+    const { sessions, currentSessionId, setSession, loadHistory, fetchSessions, createSession, deleteSession } = useChatStore();
+    const [openMenuId, setOpenMenuId] = useState(null);
+    const menuRefs = useRef({});
 
     useEffect(() => {
         fetchSessions();
     }, []);
+
+    // Load history when currentSessionId changes (e.g., after deletion)
+    useEffect(() => {
+        if (!currentSessionId) {
+            loadHistory([], null);
+            return;
+        }
+
+        const session = sessions.find(s => (s._id || s.id) === currentSessionId);
+        if (session) {
+            if (session.last_active_node_id) {
+                fetch(`${API_URL}/chat/history/${session.last_active_node_id}`)
+                    .then(res => res.json())
+                    .then(nodes => loadHistory(nodes, session.last_active_node_id))
+                    .catch(e => {
+                        console.error("Failed to load history", e);
+                        loadHistory([], null);
+                    });
+            } else {
+                loadHistory([], null);
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentSessionId]);
+
+    // Close menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (openMenuId) {
+                const menuRef = menuRefs.current[openMenuId];
+                if (menuRef && !menuRef.contains(event.target)) {
+                    setOpenMenuId(null);
+                }
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [openMenuId]);
 
     const handleCreateSession = async () => {
         await createSession();
     };
 
     const selectSession = async (session) => {
+        setOpenMenuId(null); // Close menu when selecting a session
         setSession(session._id || session.id);
 
         if (session.last_active_node_id) {
@@ -29,6 +73,24 @@ const SessionSidebar = ({ isCollapsed, onToggleCollapse }) => {
         } else {
             loadHistory([], null);
         }
+    };
+
+    const handleDeleteSession = async (sessionId, e) => {
+        e.stopPropagation(); // Prevent session selection
+        if (window.confirm("Are you sure you want to delete this chat thread?")) {
+            try {
+                await deleteSession(sessionId);
+                setOpenMenuId(null);
+            } catch (err) {
+                console.error("Failed to delete session", err);
+                alert("Failed to delete session. Please try again.");
+            }
+        }
+    };
+
+    const toggleMenu = (sessionId, e) => {
+        e.stopPropagation(); // Prevent session selection
+        setOpenMenuId(openMenuId === sessionId ? null : sessionId);
     };
 
     return (
@@ -70,33 +132,68 @@ const SessionSidebar = ({ isCollapsed, onToggleCollapse }) => {
                 </div>
                 <div className="space-y-1">
                 {sessions.map(session => {
-                    const isActive = (session._id || session.id) === currentSessionId;
+                    const sessionId = session._id || session.id;
+                    const isActive = sessionId === currentSessionId;
+                    const isMenuOpen = openMenuId === sessionId;
                     return (
-                        <button
-                            key={session._id || session.id}
-                            onClick={() => selectSession(session)}
-                            className={`w-full text-left p-3 rounded-xl flex items-center gap-3 transition-all duration-200 group
-                                ${isActive
-                                    ? 'bg-white shadow-md shadow-slate-200/50 ring-1 ring-slate-200/80'
-                                    : 'hover:bg-white/70 hover:shadow-sm text-slate-600 hover:text-slate-900'
-                                }`}
+                        <div
+                            key={sessionId}
+                            className="relative group/item"
                         >
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors duration-200
-                                ${isActive
-                                    ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md shadow-blue-500/20'
-                                    : 'bg-slate-100 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500'
-                                }`}>
-                                <MessageSquare size={14} />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <div className={`truncate text-sm font-medium ${isActive ? 'text-slate-800' : ''}`}>
-                                    {session.title || "Untitled Chat"}
+                            <button
+                                onClick={() => selectSession(session)}
+                                className={`w-full text-left p-3 rounded-xl flex items-center gap-3 transition-all duration-200 group
+                                    ${isActive
+                                        ? 'bg-white shadow-md shadow-slate-200/50 ring-1 ring-slate-200/80'
+                                        : 'hover:bg-white/70 hover:shadow-sm text-slate-600 hover:text-slate-900'
+                                    }`}
+                            >
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors duration-200
+                                    ${isActive
+                                        ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md shadow-blue-500/20'
+                                        : 'bg-slate-100 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500'
+                                    }`}>
+                                    <MessageSquare size={14} />
                                 </div>
-                            </div>
-                            {isActive && (
-                                <ChevronRight size={14} className="text-slate-400 shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                    <div className={`truncate text-sm font-medium ${isActive ? 'text-slate-800' : ''}`}>
+                                        {session.title || "Untitled Chat"}
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                    <button
+                                        onClick={(e) => toggleMenu(sessionId, e)}
+                                        className={`p-1.5 rounded-lg transition-all duration-200
+                                            ${isMenuOpen
+                                                ? 'bg-slate-200 text-slate-700'
+                                                : 'opacity-0 group-hover/item:opacity-100 text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+                                            }`}
+                                        title="More options"
+                                    >
+                                        <MoreVertical size={14} />
+                                    </button>
+                                    {isActive && !isMenuOpen && (
+                                        <ChevronRight size={14} className="text-slate-400 shrink-0" />
+                                    )}
+                                </div>
+                            </button>
+
+                            {/* Dropdown Menu */}
+                            {isMenuOpen && (
+                                <div
+                                    ref={el => menuRefs.current[sessionId] = el}
+                                    className="absolute right-0 top-full mt-1 z-50 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1"
+                                >
+                                    <button
+                                        onClick={(e) => handleDeleteSession(sessionId, e)}
+                                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-150 flex items-center gap-2"
+                                    >
+                                        <Trash2 size={14} />
+                                        <span>Delete</span>
+                                    </button>
+                                </div>
                             )}
-                        </button>
+                        </div>
                     );
                 })}
 
