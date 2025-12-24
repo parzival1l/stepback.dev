@@ -6,8 +6,10 @@ export const useChatStore = create((set, get) => ({
     rootId: null,
     currentSessionId: null,
     sessions: [],
+    selectedModel: null,  // Selected model ID
 
     setSession: (sessionId) => set({ currentSessionId: sessionId }),
+    setSelectedModel: (modelId) => set({ selectedModel: modelId }),
 
     // Load a full history list (linear path)
     loadHistory: (nodes, activeTipId) => {

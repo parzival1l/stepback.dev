@@ -2,17 +2,16 @@ from fastapi import FastAPI, HTTPException
 from contextlib import asynccontextmanager
 from backend.database import init_db, close_db
 from backend.repositories.factory import DatabaseFactory
-from backend.llm import GeminiService
-from typing import List, Optional, Any
+from backend.llm import LLMService
+from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
-import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
 # Initialize Service
-gemini_service = GeminiService()
+llm_service = LLMService()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -36,6 +35,15 @@ app.add_middleware(
 async def root():
     return {"message": "TreeChat Backend is Running"}
 
+@app.get("/models")
+async def get_models():
+    """Get available models from configuration"""
+    import json
+    from pathlib import Path
+    models_path = Path(__file__).parent / "models.json"
+    with open(models_path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
 # --- Pydantic Models for Requests ---
 class CreateSessionRequest(BaseModel):
     title: Optional[str] = "New Chat"
@@ -45,7 +53,7 @@ class MessageRequest(BaseModel):
     parent_id: Optional[str] = None
     content: str
     role: str = "user" # primarily user, but maybe system
-    model: str = "gpt-4"
+    model: str = "gemini-2.5-flash"
 
 # --- Pydantic Models for Responses ---
 class SessionResponse(BaseModel):
@@ -127,12 +135,13 @@ async def send_message(request: MessageRequest):
 
     # Sort by created_at
     history_nodes_list.sort(key=lambda x: x["created_at"])
-    
+
     # Call LLM
     # 3. Log LLM Call (System Node)
     system_path = path + [user_node["id"]]
     # Create a summary of the call
-    call_log = f"Invoking Model: gemini-pro\nContext Length: {len(history_nodes_list)} messages"
+    model_name = request.model
+    call_log = f"Invoking Model: {model_name}\nContext Length: {len(history_nodes_list)} messages"
 
     system_node = await node_repo.create(
         session_id=request.session_id,
@@ -152,7 +161,7 @@ async def send_message(request: MessageRequest):
     # Update path for assistant to be child of system node
     assistant_path = system_path + [system_node["id"]]
 
-    llm_response_text = await gemini_service.generate_response(history_nodes_list, request.content)
+    llm_response_text = await llm_service.generate_response(history_nodes_list, request.content, request.model)
 
     assistant_node = await node_repo.create(
         session_id=request.session_id,
@@ -160,7 +169,7 @@ async def send_message(request: MessageRequest):
         role="assistant",
         content=llm_response_text,
         path=assistant_path,
-        model="gemini-pro"
+        model=request.model
     )
 
     # Update session again to point to assistant

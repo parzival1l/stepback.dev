@@ -1,0 +1,18 @@
+{
+  "models": [
+    {
+      "id": "gemini-2.5-flash",
+      "name": "Gemini 2.5 Flash",
+      "provider": "gemini",
+      "description": "Google's Gemini 2.5 Flash model"
+    },
+    {
+      "id": "gpt-oss",
+      "name": "GPT-OSS (via HuggingFace)",
+      "provider": "huggingface",
+      "description": "Open source GPT model via HuggingFace inference endpoint",
+      "model_path": "openai/gpt-oss-120b:groq"
+    }
+  ]
+}
+

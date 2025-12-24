@@ -5,16 +5,18 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import remarkGfm from 'remark-gfm';
+import ModelSelector from './ModelSelector';
 
 const API_URL = "http://localhost:8000";
 
 const ChatWindow = () => {
-    const { tree, activeNodeId, setActiveNode, getLineage, getChildren, currentSessionId, loadHistory, fetchSessions, createSession } = useChatStore();
+    const { tree, activeNodeId, setActiveNode, getLineage, getChildren, currentSessionId, loadHistory, fetchSessions, createSession, selectedModel, setSelectedModel } = useChatStore();
     const lineage = getLineage();
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [sendMode, setSendMode] = useState('reply'); // 'reply' (child) or 'branch' (sibling)
     const [showDropdown, setShowDropdown] = useState(false);
+    const [showModelSelector, setShowModelSelector] = useState(false);
 
     // Optimistic UI state
     const [optimisticMessage, setOptimisticMessage] = useState(null);
@@ -29,7 +31,33 @@ const ChatWindow = () => {
         scrollToBottom();
     }, [lineage, isLoading, optimisticMessage]);
 
+    // Show model selector if no session or no model selected
+    useEffect(() => {
+        if (!currentSessionId || !selectedModel) {
+            setShowModelSelector(true);
+        } else {
+            setShowModelSelector(false);
+        }
+    }, [currentSessionId, selectedModel]);
+
     const activeNode = tree[activeNodeId];
+
+    const handleModelSelect = (modelId) => {
+        setSelectedModel(modelId);
+    };
+
+    const handleStartChatting = async () => {
+        if (!selectedModel) return;
+        // Create a session if one doesn't exist
+        if (!currentSessionId) {
+            const sessionId = await createSession();
+            if (sessionId) {
+                setShowModelSelector(false);
+            }
+        } else {
+            setShowModelSelector(false);
+        }
+    };
 
     // Handle Sending Message
     const sendMessage = async () => {
@@ -70,7 +98,8 @@ const ChatWindow = () => {
                     session_id: sessionId,
                     parent_id: parentId,
                     content: messageContent,
-                    role: "user"
+                    role: "user",
+                    model: selectedModel || "gemini-2.5-flash"
                 })
             });
             const data = await res.json();
@@ -124,23 +153,45 @@ const ChatWindow = () => {
         }
     };
 
+    // Show model selector if needed
+    if (showModelSelector) {
+        return (
+            <div className="flex flex-col h-full max-w-4xl mx-auto">
+                <ModelSelector
+                    selectedModel={selectedModel}
+                    onModelSelect={handleModelSelect}
+                    onStart={handleStartChatting}
+                />
+            </div>
+        );
+    }
+
     return (
         <div className="flex flex-col h-full max-w-4xl mx-auto px-6 py-4">
             {/* Toolbar */}
-            <div className="flex justify-end pb-3">
-                <button
-                    onClick={handleSquash}
-                    disabled={isLoading || !activeNodeId}
-                    className="text-xs flex items-center gap-1.5 bg-gradient-to-r from-purple-50 to-violet-50 
-                        text-purple-700 px-4 py-2 rounded-lg border border-purple-200/60
-                        hover:from-purple-100 hover:to-violet-100 hover:border-purple-300 hover:shadow-sm
-                        transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed
-                        font-medium"
-                    title="Summarize current branch into a single node"
-                >
-                    <GitMerge size={14} />
-                    Squash / Summarize
-                </button>
+            <div className="flex justify-between items-center pb-3">
+                {/* Model indicator */}
+                {selectedModel && (
+                    <div className="flex items-center gap-2 text-xs text-slate-500 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-200/60">
+                        <span className="font-medium text-slate-600">Model:</span>
+                        <span className="font-mono">{selectedModel}</span>
+                    </div>
+                )}
+                <div className="flex justify-end">
+                    <button
+                        onClick={handleSquash}
+                        disabled={isLoading || !activeNodeId}
+                        className="text-xs flex items-center gap-1.5 bg-gradient-to-r from-purple-50 to-violet-50
+                            text-purple-700 px-4 py-2 rounded-lg border border-purple-200/60
+                            hover:from-purple-100 hover:to-violet-100 hover:border-purple-300 hover:shadow-sm
+                            transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed
+                            font-medium"
+                        title="Summarize current branch into a single node"
+                    >
+                        <GitMerge size={14} />
+                        Squash / Summarize
+                    </button>
+                </div>
             </div>
 
             {/* Messages */}
@@ -191,7 +242,7 @@ const ChatWindow = () => {
                         {/* Input */}
                         <div className="flex-1 relative">
                             <textarea
-                                className="w-full border border-slate-200/80 rounded-xl px-4 py-3 
+                                className="w-full border border-slate-200/80 rounded-xl px-4 py-3
                                     focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-400
                                     disabled:bg-slate-50 disabled:text-slate-400
                                     resize-none shadow-sm bg-white/80 backdrop-blur-sm
@@ -217,8 +268,8 @@ const ChatWindow = () => {
                             <div className="flex items-center shadow-lg shadow-blue-500/20 rounded-xl overflow-hidden">
                                 <button
                                     onClick={sendMessage}
-                                    className="gradient-primary text-white px-4 py-3 
-                                        hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed 
+                                    className="gradient-primary text-white px-4 py-3
+                                        hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed
                                         flex items-center justify-center transition-all duration-200
                                         active:scale-95"
                                     disabled={!input.trim() || isLoading}
@@ -229,8 +280,8 @@ const ChatWindow = () => {
                                 <div className="w-px h-6 bg-blue-700/30"></div>
                                 <button
                                     onClick={() => setShowDropdown(!showDropdown)}
-                                    className="gradient-primary text-white px-2 py-3 
-                                        hover:brightness-110 disabled:opacity-50 
+                                    className="gradient-primary text-white px-2 py-3
+                                        hover:brightness-110 disabled:opacity-50
                                         flex items-center justify-center transition-all duration-200"
                                     disabled={isLoading}
                                 >
@@ -240,7 +291,7 @@ const ChatWindow = () => {
 
                             {/* Dropdown Menu */}
                             {showDropdown && (
-                                <div className="absolute bottom-14 right-0 bg-white/95 backdrop-blur-xl shadow-2xl shadow-slate-200/50 
+                                <div className="absolute bottom-14 right-0 bg-white/95 backdrop-blur-xl shadow-2xl shadow-slate-200/50
                                     border border-slate-200/60 rounded-xl p-1.5 min-w-[220px] z-20 animate-slide-in-from-bottom">
                                     <button
                                         className={`w-full text-left px-3 py-2.5 text-sm rounded-lg flex items-center gap-3 transition-all duration-150
@@ -356,7 +407,7 @@ const MessageItem = ({ node, isOptimistic = false, animationDelay = 0 }) => {
                             onClick={handlePrev}
                             disabled={currentIndex === 0}
                             className="p-1.5 rounded-lg bg-white border border-slate-200 shadow-sm
-                                hover:bg-slate-50 hover:border-slate-300 disabled:opacity-30 
+                                hover:bg-slate-50 hover:border-slate-300 disabled:opacity-30
                                 transition-all duration-150 disabled:cursor-not-allowed"
                         >
                             <ChevronLeft size={12} className="text-slate-600" />
@@ -368,7 +419,7 @@ const MessageItem = ({ node, isOptimistic = false, animationDelay = 0 }) => {
                             onClick={handleNext}
                             disabled={currentIndex === children.length - 1}
                             className="p-1.5 rounded-lg bg-white border border-slate-200 shadow-sm
-                                hover:bg-slate-50 hover:border-slate-300 disabled:opacity-30 
+                                hover:bg-slate-50 hover:border-slate-300 disabled:opacity-30
                                 transition-all duration-150 disabled:cursor-not-allowed"
                         >
                             <ChevronRight size={12} className="text-slate-600" />
