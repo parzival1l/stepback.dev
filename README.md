@@ -84,6 +84,10 @@ A git-style conversational AI application that lets you branch off during any ch
 
    Required configuration in `.env`:
    ```bash
+   # Authentication Code (16 characters, required)
+   # Generate with: openssl rand -hex 8
+   AUTH_CODE=your16charcode!!
+
    # Google Gemini API Key (required)
    GOOGLE_API_KEY=your_google_api_key_here
 
@@ -222,6 +226,35 @@ Once running, visit `http://localhost:8000/docs` for interactive API documentati
 ```
 
 ## 🔧 Configuration
+
+### Authentication
+
+stepback.dev uses a simple 16-character authentication code for access control. This is designed to be easily replaced with OAuth (Google/Microsoft) when deploying to production.
+
+**Setting up authentication:**
+
+1. Generate a 16-character code:
+   ```bash
+   openssl rand -hex 8
+   ```
+
+2. Add it to your `.env` file:
+   ```bash
+   AUTH_CODE=your16charcode!!
+   ```
+
+3. When you access the app, enter this code to authenticate.
+
+**How it works:**
+- The auth code is stored in `sessionStorage` (persists across page refreshes)
+- Closing the browser clears the auth code (you'll need to re-enter it)
+- All API endpoints (except `/` and `/models`) are protected
+
+**Future: OAuth Support**
+
+The authentication system is built with a modular architecture that allows easy migration to OAuth:
+- Backend: `backend/auth/` contains abstract providers that can be swapped
+- Frontend: `frontend/src/services/auth.js` and `frontend/src/contexts/AuthContext.jsx` provide the auth interface
 
 ### Database Options
 

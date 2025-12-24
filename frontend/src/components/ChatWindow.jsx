@@ -6,8 +6,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import remarkGfm from 'remark-gfm';
 import ModelSelector from './ModelSelector';
-
-const API_URL = "http://localhost:8000";
+import { api } from '../utils/apiClient';
 
 const ChatWindow = () => {
     const { tree, activeNodeId, setActiveNode, getLineage, getChildren, currentSessionId, loadHistory, fetchSessions, createSession, selectedModel, setSelectedModel } = useChatStore();
@@ -91,21 +90,17 @@ const ChatWindow = () => {
         });
 
         try {
-            const res = await fetch(`${API_URL}/chat/message`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    session_id: sessionId,
-                    parent_id: parentId,
-                    content: messageContent,
-                    role: "user",
-                    model: selectedModel || "gemini-2.5-flash"
-                })
+            const res = await api.post('/chat/message', {
+                session_id: sessionId,
+                parent_id: parentId,
+                content: messageContent,
+                role: "user",
+                model: selectedModel || "gemini-2.5-flash"
             });
             const data = await res.json();
 
             if (data.assistant_node) {
-                const historyRes = await fetch(`${API_URL}/chat/history/${data.assistant_node._id || data.assistant_node.id}`);
+                const historyRes = await api.get(`/chat/history/${data.assistant_node._id || data.assistant_node.id}`);
                 const historyNodes = await historyRes.json();
                 loadHistory(historyNodes, data.assistant_node._id || data.assistant_node.id);
 
@@ -132,17 +127,13 @@ const ChatWindow = () => {
 
         setIsLoading(true);
         try {
-            const res = await fetch(`${API_URL}/chat/squash`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    session_id: currentSessionId,
-                    node_id: activeNodeId
-                })
+            const res = await api.post('/chat/squash', {
+                session_id: currentSessionId,
+                node_id: activeNodeId
             });
             const summaryNode = await res.json();
 
-            const historyRes = await fetch(`${API_URL}/chat/history/${summaryNode._id || summaryNode.id}`);
+            const historyRes = await api.get(`/chat/history/${summaryNode._id || summaryNode.id}`);
             const historyNodes = await historyRes.json();
             loadHistory(historyNodes, summaryNode._id || summaryNode.id);
 

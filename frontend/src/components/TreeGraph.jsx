@@ -13,6 +13,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import { useChatStore } from '../store';
 import dagre from 'dagre';
+import { api } from '../utils/apiClient';
 
 const nodeWidth = 220;
 const nodeHeight = 90;
@@ -95,7 +96,7 @@ const TreeGraphContent = () => {
 
         const fetchTree = async () => {
             try {
-                const res = await fetch(`http://localhost:8000/session/${currentSessionId}/tree`);
+                const res = await api.get(`/session/${currentSessionId}/tree`);
                 const data = await res.json();
 
                 // --- ATOMIC TRANSFORMATION LOGIC ---
@@ -242,10 +243,14 @@ const TreeGraphContent = () => {
 
     const onNodeClick = useCallback(async (event, node) => {
         const targetId = node.data.tailId;
-        const res = await fetch(`http://localhost:8000/chat/history/${targetId}`);
-        const history = await res.json();
-        const { loadHistory } = useChatStore.getState();
-        loadHistory(history, targetId);
+        try {
+            const res = await api.get(`/chat/history/${targetId}`);
+            const history = await res.json();
+            const { loadHistory } = useChatStore.getState();
+            loadHistory(history, targetId);
+        } catch (err) {
+            console.error("Failed to load history on node click", err);
+        }
     }, []);
 
     return (

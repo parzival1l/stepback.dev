@@ -1,9 +1,10 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from contextlib import asynccontextmanager
 from backend.database import init_db, close_db
 from backend.repositories.factory import DatabaseFactory
 from backend.llm import LLMService
-from typing import List, Optional
+from backend.auth.hash_auth import verify_auth_header
+from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
 from datetime import datetime
 from dotenv import load_dotenv
@@ -31,6 +32,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- Public Endpoints (No Auth Required) ---
+
 @app.get("/")
 async def root():
     return {"message": "stepback.dev Backend is Running"}
@@ -43,6 +46,15 @@ async def get_models():
     models_path = Path(__file__).parent / "models.json"
     with open(models_path, 'r', encoding='utf-8') as f:
         return json.load(f)
+
+@app.post("/auth/validate")
+async def validate_auth(user: Dict[str, Any] = Depends(verify_auth_header)):
+    """
+    Validate an authentication code.
+
+    Returns 200 OK if valid, 401 Unauthorized if invalid.
+    """
+    return {"valid": True, "user": user}
 
 # --- Pydantic Models for Requests ---
 class CreateSessionRequest(BaseModel):
@@ -84,22 +96,28 @@ def get_repositories():
     db = DatabaseFactory.get_database()
     return db.get_session_repository(), db.get_chat_node_repository()
 
-# --- Endpoints ---
+# --- Protected Endpoints (Auth Required) ---
 
 @app.post("/sessions", response_model=SessionResponse)
-async def create_session(request: CreateSessionRequest):
+async def create_session(
+    request: CreateSessionRequest,
+    user: Dict[str, Any] = Depends(verify_auth_header)
+):
     session_repo, _ = get_repositories()
     session = await session_repo.create(title=request.title)
     return SessionResponse(**session)
 
 @app.get("/sessions", response_model=List[SessionResponse])
-async def list_sessions():
+async def list_sessions(user: Dict[str, Any] = Depends(verify_auth_header)):
     session_repo, _ = get_repositories()
     sessions = await session_repo.list_all()
     return [SessionResponse(**s) for s in sessions]
 
 @app.delete("/sessions/{session_id}")
-async def delete_session(session_id: str):
+async def delete_session(
+    session_id: str,
+    user: Dict[str, Any] = Depends(verify_auth_header)
+):
     session_repo, node_repo = get_repositories()
 
     # Check if session exists
@@ -122,7 +140,10 @@ async def delete_session(session_id: str):
     return {"message": "Session deleted successfully"}
 
 @app.post("/chat/message", response_model=ChatResponse)
-async def send_message(request: MessageRequest):
+async def send_message(
+    request: MessageRequest,
+    user: Dict[str, Any] = Depends(verify_auth_header)
+):
     session_repo, node_repo = get_repositories()
 
     # 1. Fetch parent path if parent_id exists
@@ -205,7 +226,10 @@ async def send_message(request: MessageRequest):
     )
 
 @app.get("/chat/history/{node_id}", response_model=List[ChatNodeResponse])
-async def get_history(node_id: str):
+async def get_history(
+    node_id: str,
+    user: Dict[str, Any] = Depends(verify_auth_header)
+):
     _, node_repo = get_repositories()
 
     node = await node_repo.get(node_id)
@@ -229,8 +253,10 @@ async def get_history(node_id: str):
     return [ChatNodeResponse(**h) for h in history]
 
 @app.get("/session/{session_id}/tree", response_model=List[ChatNodeResponse])
-async def get_session_tree(session_id: str):
+async def get_session_tree(
+    session_id: str,
+    user: Dict[str, Any] = Depends(verify_auth_header)
+):
     _, node_repo = get_repositories()
     nodes = await node_repo.find_by_session(session_id)
     return [ChatNodeResponse(**n) for n in nodes]
-

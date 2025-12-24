@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { api } from './utils/apiClient';
 
 export const useChatStore = create((set, get) => ({
     tree: {},      // Record<string, ChatNode>
@@ -35,7 +36,7 @@ export const useChatStore = create((set, get) => ({
     // Actions
     fetchSessions: async () => {
         try {
-            const res = await fetch('http://localhost:8000/sessions');
+            const res = await api.get('/sessions');
             const data = await res.json();
             // Backend already returns newest first, but ensure it's sorted
             const sorted = [...data].sort((a, b) => {
@@ -51,11 +52,7 @@ export const useChatStore = create((set, get) => ({
 
     createSession: async () => {
         try {
-            const res = await fetch('http://localhost:8000/sessions', {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ title: "New Chat" })
-            });
+            const res = await api.post('/sessions', { title: "New Chat" });
             const newSession = await res.json();
             set(state => ({
                 sessions: [newSession, ...state.sessions],
@@ -73,9 +70,7 @@ export const useChatStore = create((set, get) => ({
 
     deleteSession: async (sessionId) => {
         try {
-            const res = await fetch(`http://localhost:8000/sessions/${sessionId}`, {
-                method: "DELETE"
-            });
+            const res = await api.delete(`/sessions/${sessionId}`);
             if (!res.ok) {
                 throw new Error("Failed to delete session");
             }

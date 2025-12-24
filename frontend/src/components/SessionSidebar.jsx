@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useChatStore } from '../store';
 import { MessageSquare, Plus, Trash2, ChevronRight, ChevronLeft, MoreVertical } from 'lucide-react';
-
-const API_URL = "http://localhost:8000";
+import { api } from '../utils/apiClient';
 
 const SessionSidebar = ({ isCollapsed, onToggleCollapse }) => {
     const { sessions, currentSessionId, setSession, loadHistory, fetchSessions, createSession, deleteSession } = useChatStore();
@@ -23,7 +22,7 @@ const SessionSidebar = ({ isCollapsed, onToggleCollapse }) => {
         const session = sessions.find(s => (s._id || s.id) === currentSessionId);
         if (session) {
             if (session.last_active_node_id) {
-                fetch(`${API_URL}/chat/history/${session.last_active_node_id}`)
+                api.get(`/chat/history/${session.last_active_node_id}`)
                     .then(res => res.json())
                     .then(nodes => loadHistory(nodes, session.last_active_node_id))
                     .catch(e => {
@@ -64,7 +63,7 @@ const SessionSidebar = ({ isCollapsed, onToggleCollapse }) => {
 
         if (session.last_active_node_id) {
             try {
-                const res = await fetch(`${API_URL}/chat/history/${session.last_active_node_id}`);
+                const res = await api.get(`/chat/history/${session.last_active_node_id}`);
                 const nodes = await res.json();
                 loadHistory(nodes, session.last_active_node_id);
             } catch (e) {

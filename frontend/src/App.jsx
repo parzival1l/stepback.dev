@@ -3,14 +3,18 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import ChatWindow from './components/ChatWindow';
 import SessionSidebar from './components/SessionSidebar';
 import TreeGraph from './components/TreeGraph';
-import { MessageSquare, GitGraph, ChevronRight, Sun, Moon } from 'lucide-react';
+import AuthGate from './components/AuthGate';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { MessageSquare, GitGraph, ChevronRight, Sun, Moon, LogOut } from 'lucide-react';
 import { useDarkMode } from './hooks/useDarkMode';
 
-function App() {
+// Main app content (shown when authenticated)
+function AppContent() {
   const [activeView, setActiveView] = useState('chat'); // 'chat' or 'graph'
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const sidebarPanelRef = useRef(null);
   const { toggleTheme, isDark } = useDarkMode();
+  const { logout } = useAuth();
 
   const handleToggleSidebar = () => {
     const newCollapsedState = !isSidebarCollapsed;
@@ -75,17 +79,33 @@ function App() {
           </div>
         </div>
 
-        {/* Theme Toggle */}
-        <button
-          onClick={toggleTheme}
-          className="p-2.5 rounded-xl border border-claude-secondary/30 bg-claude-white
-            hover:bg-claude-light transition-all duration-200
-            text-claude-secondary hover:text-claude-text
-            shadow-sm hover:shadow-md"
-          title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-        >
-          {isDark ? <Sun size={18} /> : <Moon size={18} />}
-        </button>
+        {/* Right side controls */}
+        <div className="flex items-center gap-2">
+          {/* Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="p-2.5 rounded-xl border border-claude-secondary/30 bg-claude-white
+              hover:bg-claude-light transition-all duration-200
+              text-claude-secondary hover:text-claude-text
+              shadow-sm hover:shadow-md"
+            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {isDark ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+
+          {/* Logout Button */}
+          <button
+            onClick={logout}
+            className="p-2.5 rounded-xl border border-claude-secondary/30 bg-claude-white
+              hover:bg-red-50 hover:border-red-200 hover:text-red-600
+              transition-all duration-200
+              text-claude-secondary
+              shadow-sm hover:shadow-md"
+            title="Logout"
+          >
+            <LogOut size={18} />
+          </button>
+        </div>
       </header>
 
       {/* Main Content with Resizable Panels */}
@@ -145,6 +165,42 @@ function App() {
       </div>
     </div>
   );
+}
+
+// Loading spinner component
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen bg-claude-light flex items-center justify-center">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-12 h-12 border-4 border-claude-secondary/30 border-t-claude-primary rounded-full animate-spin" />
+        <p className="text-claude-secondary font-medium">Loading...</p>
+      </div>
+    </div>
+  );
+}
+
+// Root App component with auth logic
+function App() {
+  return (
+    <AuthProvider>
+      <AuthenticatedApp />
+    </AuthProvider>
+  );
+}
+
+// Component that handles auth state switching
+function AuthenticatedApp() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+
+  if (!isAuthenticated) {
+    return <AuthGate />;
+  }
+
+  return <AppContent />;
 }
 
 export default App;
