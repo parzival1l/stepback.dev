@@ -1,12 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import ChatWindow from './components/ChatWindow';
 import SessionSidebar from './components/SessionSidebar';
 import TreeGraph from './components/TreeGraph';
-import { MessageSquare, GitGraph } from 'lucide-react';
+import { MessageSquare, GitGraph, ChevronLeft, ChevronRight } from 'lucide-react';
 
 function App() {
   const [activeView, setActiveView] = useState('chat'); // 'chat' or 'graph'
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const sidebarPanelRef = useRef(null);
+
+  const handleToggleSidebar = () => {
+    const newCollapsedState = !isSidebarCollapsed;
+
+    // Use imperative API to collapse/expand
+    if (sidebarPanelRef.current) {
+      if (newCollapsedState) {
+        sidebarPanelRef.current.collapse();
+      } else {
+        sidebarPanelRef.current.expand();
+      }
+    }
+
+    // Update state - callbacks will also update it, but we do it here for immediate UI feedback
+    setIsSidebarCollapsed(newCollapsedState);
+  };
 
   return (
     <div className="h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 text-gray-900 font-sans flex flex-col overflow-hidden">
@@ -57,20 +75,44 @@ function App() {
       </header>
 
       {/* Main Content with Resizable Panels */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden relative">
+        {/* Expand Button (shown when sidebar is collapsed) */}
+        {isSidebarCollapsed && (
+          <button
+            onClick={handleToggleSidebar}
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-8 h-12 rounded-r-lg bg-white border border-slate-200/80
+                shadow-md hover:shadow-lg flex items-center justify-center
+                hover:bg-slate-50 transition-all duration-200
+                text-slate-500 hover:text-slate-700"
+            title="Expand sidebar"
+          >
+            <ChevronRight size={16} />
+          </button>
+        )}
+
         <PanelGroup direction="horizontal" autoSaveId="stepback-layout">
           {/* Sidebar Panel */}
           <Panel
+            ref={sidebarPanelRef}
             defaultSize={20}
             minSize={12}
             maxSize={35}
-            className="bg-slate-50/50"
+            collapsedSize={0}
+            collapsible={true}
+            onCollapse={() => setIsSidebarCollapsed(true)}
+            onExpand={() => setIsSidebarCollapsed(false)}
+            className="bg-slate-50/50 relative"
           >
-            <SessionSidebar />
+            <SessionSidebar
+              isCollapsed={isSidebarCollapsed}
+              onToggleCollapse={handleToggleSidebar}
+            />
           </Panel>
 
           {/* Resize Handle */}
-          <PanelResizeHandle className="resize-handle hover:bg-gradient-to-b hover:from-transparent hover:via-blue-400/30 hover:to-transparent" />
+          {!isSidebarCollapsed && (
+            <PanelResizeHandle className="resize-handle hover:bg-gradient-to-b hover:from-transparent hover:via-blue-400/30 hover:to-transparent" />
+          )}
 
           {/* Main Content Panel */}
           <Panel minSize={50}>

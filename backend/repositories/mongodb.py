@@ -23,8 +23,8 @@ class MongoSessionRepository(SessionRepository):
         return self._to_dict(session) if session else None
 
     async def list_all(self) -> List[dict]:
-        """List all sessions"""
-        sessions = await Session.find_all().to_list()
+        """List all sessions, ordered by created_at descending (newest first)"""
+        sessions = await Session.find_all().sort(-Session.created_at).to_list()
         return [self._to_dict(s) for s in sessions]
 
     async def update(self, session_id: str, updates: dict) -> Optional[dict]:

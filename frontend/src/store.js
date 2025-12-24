@@ -37,7 +37,13 @@ export const useChatStore = create((set, get) => ({
         try {
             const res = await fetch('http://localhost:8000/sessions');
             const data = await res.json();
-            set({ sessions: data });
+            // Backend already returns newest first, but ensure it's sorted
+            const sorted = [...data].sort((a, b) => {
+                const dateA = new Date(a.created_at);
+                const dateB = new Date(b.created_at);
+                return dateB - dateA; // Descending (newest first)
+            });
+            set({ sessions: sorted });
         } catch (err) {
             console.error("Failed to fetch sessions", err);
         }

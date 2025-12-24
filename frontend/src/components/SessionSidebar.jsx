@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useChatStore } from '../store';
-import { MessageSquare, Plus, Trash2, ChevronRight } from 'lucide-react';
+import { MessageSquare, Plus, Trash2, ChevronRight, ChevronLeft } from 'lucide-react';
 
 const API_URL = "http://localhost:8000";
 
-const SessionSidebar = () => {
+const SessionSidebar = ({ isCollapsed, onToggleCollapse }) => {
     const { sessions, currentSessionId, setSession, loadHistory, fetchSessions, createSession } = useChatStore();
 
     useEffect(() => {
@@ -32,14 +32,29 @@ const SessionSidebar = () => {
     };
 
     return (
-        <div className="h-full flex flex-col bg-gradient-to-b from-slate-50 to-slate-100/50 border-r border-slate-200/60">
+        <div className="h-full flex flex-col bg-gradient-to-b from-slate-50 to-slate-100/50 border-r border-slate-200/60 relative">
+            {/* Collapse Button */}
+            <button
+                onClick={onToggleCollapse}
+                className="absolute top-4 -right-3 z-10 w-6 h-6 rounded-full bg-white border border-slate-200/80
+                    shadow-md hover:shadow-lg flex items-center justify-center
+                    hover:bg-slate-50 transition-all duration-200
+                    text-slate-500 hover:text-slate-700"
+                title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+                <ChevronLeft
+                    size={14}
+                    className={`transition-transform duration-200 ${isCollapsed ? 'rotate-180' : ''}`}
+                />
+            </button>
+
             {/* New Chat Button */}
             <div className="p-4">
                 <button
                     onClick={handleCreateSession}
-                    className="w-full flex items-center justify-center gap-2.5 gradient-primary text-white py-2.5 px-4 rounded-xl 
-                        font-semibold text-sm shadow-lg shadow-blue-500/25 
-                        hover:shadow-xl hover:shadow-blue-500/30 hover:scale-[1.02] 
+                    className="w-full flex items-center justify-center gap-2.5 gradient-primary text-white py-2.5 px-4 rounded-xl
+                        font-semibold text-sm shadow-lg shadow-blue-500/25
+                        hover:shadow-xl hover:shadow-blue-500/30 hover:scale-[1.02]
                         active:scale-[0.98] transition-all duration-200"
                 >
                     <Plus size={18} strokeWidth={2.5} />
@@ -48,7 +63,12 @@ const SessionSidebar = () => {
             </div>
 
             {/* Sessions List */}
-            <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-1">
+            <div className="flex-1 overflow-y-auto px-3 pb-3">
+                {/* Chats Heading */}
+                <div className="px-2 py-2 mb-1">
+                    <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Chats</h2>
+                </div>
+                <div className="space-y-1">
                 {sessions.map(session => {
                     const isActive = (session._id || session.id) === currentSessionId;
                     return (
@@ -85,6 +105,7 @@ const SessionSidebar = () => {
                         No conversations yet
                     </div>
                 )}
+                </div>
             </div>
         </div>
     );
