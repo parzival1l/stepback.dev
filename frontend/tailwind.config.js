@@ -8,10 +8,11 @@ export default {
         extend: {
             colors: {
                 'claude': {
-                    'primary': '#c15f3c',      // Reddish-brown/burnt orange
-                    'secondary': '#b1ada1',    // Light greyish-brown/taupe
-                    'light': '#f4f3ee',         // Very light off-white/cream
-                    'white': '#ffffff',         // Pure white
+                    'primary': 'var(--claude-primary)',
+                    'secondary': 'var(--claude-secondary)',
+                    'light': 'var(--claude-light)',
+                    'white': 'var(--claude-white)',
+                    'text': 'var(--claude-text)',
                 },
             },
             fontFamily: {

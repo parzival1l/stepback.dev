@@ -3,12 +3,14 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import ChatWindow from './components/ChatWindow';
 import SessionSidebar from './components/SessionSidebar';
 import TreeGraph from './components/TreeGraph';
-import { MessageSquare, GitGraph, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MessageSquare, GitGraph, ChevronRight, Sun, Moon } from 'lucide-react';
+import { useDarkMode } from './hooks/useDarkMode';
 
 function App() {
   const [activeView, setActiveView] = useState('chat'); // 'chat' or 'graph'
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const sidebarPanelRef = useRef(null);
+  const { toggleTheme, isDark } = useDarkMode();
 
   const handleToggleSidebar = () => {
     const newCollapsedState = !isSidebarCollapsed;
@@ -72,6 +74,18 @@ function App() {
             </button>
           </div>
         </div>
+
+        {/* Theme Toggle */}
+        <button
+          onClick={toggleTheme}
+          className="p-2.5 rounded-xl border border-claude-secondary/30 bg-claude-white
+            hover:bg-claude-light transition-all duration-200
+            text-claude-secondary hover:text-claude-primary
+            shadow-sm hover:shadow-md"
+          title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {isDark ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
       </header>
 
       {/* Main Content with Resizable Panels */}
