@@ -1,25 +1,65 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { useChatStore } from '../store';
-import { MessageSquare, Plus, Trash2, ChevronRight, ChevronLeft, MoreVertical } from 'lucide-react';
 import { api } from '../utils/apiClient';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+    Sidebar,
+    SidebarContent,
+    SidebarGroup,
+    SidebarGroupLabel,
+    SidebarGroupContent,
+    SidebarHeader,
+    SidebarMenu,
+    SidebarMenuItem,
+    SidebarMenuButton,
+    SidebarMenuAction,
+    useSidebar,
+} from '@/components/ui/sidebar';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { PlusIcon, MessageIcon, TrashIcon, MoreIcon, SidebarLeftIcon } from '@/components/ui/icons';
 
-const SessionSidebar = ({ isCollapsed, onToggleCollapse }) => {
+// Sidebar Toggle Component
+export const SidebarToggle = ({ className }) => {
+    const { toggleSidebar } = useSidebar();
+
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <Button
+                    className={cn("h-8 w-8", className)}
+                    onClick={toggleSidebar}
+                    variant="outline"
+                    size="icon"
+                >
+                    <SidebarLeftIcon size={16} />
+                </Button>
+            </TooltipTrigger>
+            <TooltipContent align="start" side="right">
+                Toggle Sidebar
+            </TooltipContent>
+        </Tooltip>
+    );
+};
+
+const SessionSidebar = () => {
     const { sessions, currentSessionId, setSession, loadHistory, fetchSessions, createSession, deleteSession } = useChatStore();
 
     useEffect(() => {
         fetchSessions();
     }, []);
 
-    // Load history when currentSessionId changes (e.g., after deletion)
+    // Load history when currentSessionId changes
     useEffect(() => {
         if (!currentSessionId) {
             loadHistory([], null);
@@ -65,6 +105,7 @@ const SessionSidebar = ({ isCollapsed, onToggleCollapse }) => {
 
     const handleDeleteSession = async (sessionId, e) => {
         e.stopPropagation();
+        e.preventDefault();
         if (window.confirm("Are you sure you want to delete this chat thread?")) {
             try {
                 await deleteSession(sessionId);
@@ -76,117 +117,72 @@ const SessionSidebar = ({ isCollapsed, onToggleCollapse }) => {
     };
 
     return (
-        <div className="h-full flex flex-col bg-sidebar border-r border-sidebar-border relative">
-            {/* Collapse Button */}
-            <Button
-                variant="outline"
-                size="icon"
-                onClick={onToggleCollapse}
-                className="absolute top-4 -right-3 z-10 h-6 w-6 rounded-full shadow-md"
-                title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            >
-                <ChevronLeft
-                    size={14}
-                    className={cn(
-                        "transition-transform duration-200",
-                        isCollapsed && "rotate-180"
-                    )}
-                />
-            </Button>
-
-            {/* New Chat Button */}
-            <div className="p-4">
+        <Sidebar>
+            <SidebarHeader className="p-3">
                 <Button
                     onClick={handleCreateSession}
-                    className="w-full gap-2 rounded-xl shadow-lg"
+                    className="w-full gap-2 justify-start h-10"
+                    variant="outline"
                 >
-                    <Plus size={18} strokeWidth={2.5} />
+                    <PlusIcon size={16} />
                     <span>New Chat</span>
                 </Button>
-            </div>
+            </SidebarHeader>
 
-            {/* Sessions List */}
-            <ScrollArea className="flex-1 px-3 pb-3">
-                {/* Chats Heading */}
-                <div className="px-2 py-2 mb-1">
-                    <h2 className="text-xs font-semibold text-sidebar-foreground/70 uppercase tracking-wider">Chats</h2>
-                </div>
-                <div className="space-y-1">
-                    {sessions.map(session => {
-                        const sessionId = session._id || session.id;
-                        const isActive = sessionId === currentSessionId;
-                        return (
-                            <div
-                                key={sessionId}
-                                className="relative group/item"
-                            >
-                                <button
-                                    onClick={() => selectSession(session)}
-                                    className={cn(
-                                        "w-full text-left p-3 rounded-xl flex items-center gap-3 transition-all duration-200 group",
-                                        isActive
-                                            ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-md ring-1 ring-sidebar-border"
-                                            : "hover:bg-sidebar-accent/50 text-sidebar-foreground hover:text-sidebar-accent-foreground"
-                                    )}
-                                >
-                                    <div className={cn(
-                                        "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors duration-200",
-                                        isActive
-                                            ? "bg-primary text-primary-foreground shadow-md"
-                                            : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-foreground"
-                                    )}>
-                                        <MessageSquare size={14} />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className={cn(
-                                            "truncate text-sm font-medium",
-                                            isActive && "text-sidebar-accent-foreground"
-                                        )}>
-                                            {session.title || "Untitled Chat"}
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-1 shrink-0">
+            <SidebarContent>
+                <SidebarGroup>
+                    <SidebarGroupLabel>Chats</SidebarGroupLabel>
+                    <SidebarGroupContent>
+                        <SidebarMenu>
+                            {sessions.map(session => {
+                                const sessionId = session._id || session.id;
+                                const isActive = sessionId === currentSessionId;
+                                return (
+                                    <SidebarMenuItem key={sessionId}>
+                                        <SidebarMenuButton
+                                            isActive={isActive}
+                                            onClick={() => selectSession(session)}
+                                            tooltip={session.title || "Untitled Chat"}
+                                        >
+                                            <MessageIcon size={16} />
+                                            <span className="truncate">
+                                                {session.title || "Untitled Chat"}
+                                            </span>
+                                        </SidebarMenuButton>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className={cn(
-                                                        "h-7 w-7 opacity-0 group-hover/item:opacity-100 transition-opacity",
-                                                        "data-[state=open]:opacity-100"
-                                                    )}
+                                                <SidebarMenuAction
+                                                    showOnHover
                                                     onClick={(e) => e.stopPropagation()}
                                                 >
-                                                    <MoreVertical size={14} />
-                                                </Button>
+                                                    <MoreIcon size={14} />
+                                                    <span className="sr-only">More</span>
+                                                </SidebarMenuAction>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="w-48">
+                                            <DropdownMenuContent side="right" align="start" className="w-48">
                                                 <DropdownMenuItem
                                                     onClick={(e) => handleDeleteSession(sessionId, e)}
                                                     className="text-destructive focus:text-destructive cursor-pointer"
                                                 >
-                                                    <Trash2 size={14} className="mr-2" />
+                                                    <TrashIcon size={14} />
                                                     <span>Delete</span>
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
-                                        {isActive && (
-                                            <ChevronRight size={14} className="text-sidebar-foreground/50 shrink-0" />
-                                        )}
-                                    </div>
-                                </button>
-                            </div>
-                        );
-                    })}
+                                    </SidebarMenuItem>
+                                );
+                            })}
 
-                    {sessions.length === 0 && (
-                        <div className="text-center py-8 text-muted-foreground text-sm">
-                            No conversations yet
-                        </div>
-                    )}
-                </div>
-            </ScrollArea>
-        </div>
+                            {sessions.length === 0 && (
+                                <div className="text-center py-8 text-muted-foreground text-sm px-4">
+                                    No conversations yet
+                                </div>
+                            )}
+                        </SidebarMenu>
+                    </SidebarGroupContent>
+                </SidebarGroup>
+            </SidebarContent>
+        </Sidebar>
     );
 };
 

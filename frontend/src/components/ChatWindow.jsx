@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback, memo } from 'react';
 import { useChatStore } from '../store';
-import { Send, ChevronLeft, ChevronRight, GitMerge, GitBranch, ChevronDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, GitMerge, GitBranch, ChevronDown, Send, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -8,7 +8,6 @@ import remarkGfm from 'remark-gfm';
 import ModelSelector from './ModelSelector';
 import { api } from '../utils/apiClient';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -23,19 +22,30 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import {
+    PromptInput,
+    PromptInputTextarea,
+    PromptInputToolbar,
+    PromptInputTools,
+    PromptInputSubmit,
+    PromptInputActions,
+} from '@/components/elements/prompt-input';
+import { ArrowUpIcon, SparklesIcon, BotIcon, UserIcon } from '@/components/ui/icons';
+import { SidebarToggle } from './SessionSidebar';
 
 const ChatWindow = () => {
     const { tree, activeNodeId, setActiveNode, getLineage, getChildren, currentSessionId, loadHistory, fetchSessions, createSession, selectedModel, setSelectedModel } = useChatStore();
     const lineage = getLineage();
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-    const [sendMode, setSendMode] = useState('reply'); // 'reply' (child) or 'branch' (sibling)
+    const [sendMode, setSendMode] = useState('reply');
     const [showModelSelector, setShowModelSelector] = useState(false);
 
     // Optimistic UI state
     const [optimisticMessage, setOptimisticMessage] = useState(null);
 
     const messagesEndRef = useRef(null);
+    const textareaRef = useRef(null);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -54,6 +64,13 @@ const ChatWindow = () => {
         }
     }, [currentSessionId, selectedModel]);
 
+    // Auto-focus textarea
+    useEffect(() => {
+        if (!showModelSelector && textareaRef.current) {
+            textareaRef.current.focus();
+        }
+    }, [showModelSelector]);
+
     const activeNode = tree[activeNodeId];
 
     const handleModelSelect = (modelId) => {
@@ -62,7 +79,6 @@ const ChatWindow = () => {
 
     const handleStartChatting = async () => {
         if (!selectedModel) return;
-        // Create a session if one doesn't exist
         if (!currentSessionId) {
             const sessionId = await createSession();
             if (sessionId) {
@@ -74,28 +90,26 @@ const ChatWindow = () => {
     };
 
     // Handle Sending Message
-    const sendMessage = async () => {
+    const sendMessage = useCallback(async () => {
         if (!input.trim() || isLoading) return;
 
         let sessionId = currentSessionId;
         if (!sessionId) {
             sessionId = await createSession();
-            if (!sessionId) return; // Failed to create
+            if (!sessionId) return;
         }
 
         const messageContent = input;
         const mode = sendMode;
 
-        // Determine parent_id based on mode
         let parentId = activeNodeId;
         if (mode === 'branch' && activeNode && activeNode.parent_id) {
             parentId = activeNode.parent_id;
         }
 
-        setInput(""); // Clear input
+        setInput("");
         setIsLoading(true);
 
-        // precise optimistic rendering
         setOptimisticMessage({
             id: 'temp-optimistic',
             role: 'user',
@@ -118,22 +132,20 @@ const ChatWindow = () => {
                 const historyNodes = await historyRes.json();
                 loadHistory(historyNodes, data.assistant_node._id || data.assistant_node.id);
 
-                // Refresh sessions to catch any title updates
                 if (useChatStore.getState().fetchSessions) {
                     useChatStore.getState().fetchSessions();
                 }
-                // Always signal graph refresh
                 window.dispatchEvent(new Event('session-updated'));
             }
 
         } catch (err) {
             console.error(err);
-            setInput(messageContent); // Restore on error
+            setInput(messageContent);
         } finally {
             setIsLoading(false);
             setOptimisticMessage(null);
         }
-    };
+    }, [input, isLoading, currentSessionId, sendMode, activeNodeId, activeNode, selectedModel, createSession, loadHistory]);
 
     const handleSquash = async () => {
         if (!activeNodeId || isLoading) return;
@@ -173,16 +185,19 @@ const ChatWindow = () => {
 
     return (
         <TooltipProvider>
-            <div className="flex flex-col h-full max-w-4xl mx-auto px-6 py-4">
+            <div className="flex flex-col h-full max-w-4xl mx-auto px-4 md:px-6 py-4">
                 {/* Toolbar */}
-                <div className="flex justify-between items-center pb-3">
-                    {/* Model indicator */}
-                    {selectedModel && (
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground px-3 py-1.5 bg-card rounded-lg border border-border">
-                            <span className="font-medium text-foreground">Model:</span>
-                            <span className="font-mono text-foreground">{selectedModel}</span>
-                        </div>
-                    )}
+                <div className="flex justify-between items-center pb-3 gap-3">
+                    <div className="flex items-center gap-3">
+                        <SidebarToggle />
+                        {/* Model indicator */}
+                        {selectedModel && (
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground px-3 py-1.5 bg-muted/50 rounded-lg border border-border">
+                                <SparklesIcon size={12} />
+                                <span className="font-medium">{selectedModel}</span>
+                            </div>
+                        )}
+                    </div>
                     <div className="flex justify-end">
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -191,10 +206,10 @@ const ChatWindow = () => {
                                     size="sm"
                                     onClick={handleSquash}
                                     disabled={isLoading || !activeNodeId}
-                                    className="gap-1.5"
+                                    className="gap-1.5 h-8"
                                 >
                                     <GitMerge size={14} />
-                                    Squash / Summarize
+                                    <span className="hidden sm:inline">Squash</span>
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -219,13 +234,15 @@ const ChatWindow = () => {
                         {/* Loading indicator */}
                         {isLoading && (
                             <div className="flex justify-start animate-slide-up">
-                                <div className="glass rounded-2xl rounded-bl-sm px-5 py-4 flex items-center gap-3 shadow-lg border border-border">
-                                    <div className="flex gap-1">
-                                        <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                                        <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                                        <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                                <div className="flex items-center gap-3 px-4 py-3 rounded-2xl rounded-bl-sm bg-muted/50 border border-border shadow-sm">
+                                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10">
+                                        <BotIcon size={14} className="text-primary" />
                                     </div>
-                                    <span className="text-sm font-medium text-muted-foreground">Thinking...</span>
+                                    <div className="flex gap-1.5">
+                                        <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                                        <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                                        <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -235,110 +252,103 @@ const ChatWindow = () => {
                 </ScrollArea>
 
                 {/* Input Area */}
-                <div className="border-t border-border pt-4 mt-2">
-                    <div className="flex flex-col gap-2.5">
-                        {/* Branch Context Info */}
-                        {activeNodeId && (
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">
-                                <GitBranch size={12} />
-                                <span>
-                                    {sendMode === 'reply' ? 'Extending' : 'Branching off parent of'}:
-                                    <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-primary ml-1">
-                                        {String(activeNodeId).slice(-6)}
-                                    </span>
+                <div className="pt-4 mt-2">
+                    {/* Branch Context Info */}
+                    {activeNodeId && (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground px-1 mb-2">
+                            <GitBranch size={12} />
+                            <span>
+                                {sendMode === 'reply' ? 'Extending' : 'Branching off parent of'}:
+                                <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-foreground ml-1">
+                                    {String(activeNodeId).slice(-6)}
                                 </span>
-                            </div>
-                        )}
-
-                        <div className="flex gap-3 items-end">
-                            {/* Input */}
-                            <div className="flex-1 relative">
-                                <Textarea
-                                    className="min-h-[48px] resize-none rounded-xl shadow-sm"
-                                    rows={1}
-                                    value={input}
-                                    onChange={(e) => setInput(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && !e.shiftKey) {
-                                            e.preventDefault();
-                                            sendMessage();
-                                        }
-                                    }}
-                                    placeholder={sendMode === 'reply' ? "Type a message..." : "Type to start new branch..."}
-                                    disabled={isLoading}
-                                />
-                            </div>
-
-                            {/* Split Button for Send/Branch */}
-                            <div className="relative flex flex-col items-end">
-                                <div className="flex items-center shadow-lg rounded-xl overflow-hidden">
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button
-                                                onClick={sendMessage}
-                                                disabled={!input.trim() || isLoading}
-                                                className="rounded-r-none px-4 py-3 h-auto"
-                                            >
-                                                {sendMode === 'reply' ? <Send size={18} /> : <GitBranch size={18} />}
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p>{sendMode === 'reply' ? "Send Message" : "Create New Branch"}</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                    <div className="w-px h-6 bg-primary-foreground/30"></div>
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button
-                                                disabled={isLoading}
-                                                className="rounded-l-none px-2 py-3 h-auto"
-                                            >
-                                                <ChevronDown size={16} />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-[220px]">
-                                            <DropdownMenuItem
-                                                onClick={() => setSendMode('reply')}
-                                                className={cn(
-                                                    "flex items-center gap-3 p-3 cursor-pointer",
-                                                    sendMode === 'reply' && "bg-accent"
-                                                )}
-                                            >
-                                                <div className={cn(
-                                                    "w-8 h-8 rounded-lg flex items-center justify-center",
-                                                    sendMode === 'reply' ? "bg-primary/20" : "bg-muted"
-                                                )}>
-                                                    <Send size={14} />
-                                                </div>
-                                                <div>
-                                                    <div className="font-semibold">Reply</div>
-                                                    <div className="text-xs text-muted-foreground">Continue this conversation</div>
-                                                </div>
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                onClick={() => setSendMode('branch')}
-                                                className={cn(
-                                                    "flex items-center gap-3 p-3 cursor-pointer",
-                                                    sendMode === 'branch' && "bg-accent"
-                                                )}
-                                            >
-                                                <div className={cn(
-                                                    "w-8 h-8 rounded-lg flex items-center justify-center",
-                                                    sendMode === 'branch' ? "bg-primary/20" : "bg-muted"
-                                                )}>
-                                                    <GitBranch size={14} />
-                                                </div>
-                                                <div>
-                                                    <div className="font-semibold">New Branch</div>
-                                                    <div className="text-xs text-muted-foreground">Split from previous node</div>
-                                                </div>
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </div>
-                            </div>
+                            </span>
                         </div>
-                    </div>
+                    )}
+
+                    <PromptInput
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            if (!isLoading) {
+                                sendMessage();
+                            }
+                        }}
+                    >
+                        <PromptInputTextarea
+                            ref={textareaRef}
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            placeholder={sendMode === 'reply' ? "Send a message..." : "Type to start new branch..."}
+                            disabled={isLoading}
+                            className="min-h-[52px] text-base"
+                        />
+                        <PromptInputToolbar>
+                            <PromptInputTools>
+                                {/* Send Mode Toggle */}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 gap-1.5 text-muted-foreground hover:text-foreground"
+                                            disabled={isLoading}
+                                        >
+                                            {sendMode === 'reply' ? (
+                                                <>
+                                                    <Send size={14} />
+                                                    <span className="text-xs">Reply</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <GitBranch size={14} />
+                                                    <span className="text-xs">Branch</span>
+                                                </>
+                                            )}
+                                            <ChevronDown size={12} />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start" className="w-[200px]">
+                                        <DropdownMenuItem
+                                            onClick={() => setSendMode('reply')}
+                                            className={cn(
+                                                "flex items-center gap-3 p-2.5 cursor-pointer",
+                                                sendMode === 'reply' && "bg-accent"
+                                            )}
+                                        >
+                                            <Send size={14} />
+                                            <div className="flex-1">
+                                                <div className="font-medium text-sm">Reply</div>
+                                                <div className="text-xs text-muted-foreground">Continue conversation</div>
+                                            </div>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onClick={() => setSendMode('branch')}
+                                            className={cn(
+                                                "flex items-center gap-3 p-2.5 cursor-pointer",
+                                                sendMode === 'branch' && "bg-accent"
+                                            )}
+                                        >
+                                            <GitBranch size={14} />
+                                            <div className="flex-1">
+                                                <div className="font-medium text-sm">New Branch</div>
+                                                <div className="text-xs text-muted-foreground">Split from previous</div>
+                                            </div>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </PromptInputTools>
+
+                            <PromptInputActions>
+                                <PromptInputSubmit
+                                    disabled={!input.trim() || isLoading}
+                                    status={isLoading ? "loading" : "ready"}
+                                    className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground"
+                                >
+                                    <ArrowUpIcon size={16} />
+                                </PromptInputSubmit>
+                            </PromptInputActions>
+                        </PromptInputToolbar>
+                    </PromptInput>
                 </div>
             </div>
         </TooltipProvider>
@@ -346,13 +356,10 @@ const ChatWindow = () => {
 };
 
 // Sub-component for individual message
-const MessageItem = ({ node, isOptimistic = false, animationDelay = 0 }) => {
+const MessageItem = memo(({ node, isOptimistic = false, animationDelay = 0 }) => {
     const { setActiveNode, getChildren } = useChatStore();
 
-    // Safety check for getChildren
     const children = node.parent_id && !isOptimistic ? getChildren(node.parent_id) : [];
-
-    // Find index of current node among siblings
     const currentIndex = children.findIndex(n => (n._id || n.id) === (node._id || node.id));
     const hasSiblings = children.length > 1 && !isOptimistic;
 
@@ -369,82 +376,108 @@ const MessageItem = ({ node, isOptimistic = false, animationDelay = 0 }) => {
 
     if (isSystem) return null;
 
-    const bubbleClass = isUser ? 'user-bubble' : 'assistant-bubble';
-
     return (
         <div
             className={cn(
-                "group flex flex-col animate-slide-up",
-                isUser ? "items-end" : "items-start",
+                "group flex gap-3 animate-slide-up",
+                isUser ? "flex-row-reverse" : "flex-row",
                 isOptimistic && "opacity-60"
             )}
             style={{ animationDelay: `${animationDelay}ms` }}
         >
+            {/* Avatar */}
             <div className={cn(
-                "max-w-[85%] rounded-2xl px-5 py-3.5 relative transition-all duration-200",
+                "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-0.5",
                 isUser
-                    ? "bg-card text-foreground rounded-br-sm shadow-lg border border-border"
-                    : "bg-primary text-primary-foreground rounded-bl-sm shadow-lg",
-                bubbleClass
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted border border-border"
             )}>
-                <div className={cn("markdown-content", isUser ? "user-message" : "assistant-message")}>
-                    <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        components={{
-                            code({ node, inline, className, children, ...props }) {
-                                const match = /language-(\w+)/.exec(className || '')
-                                return !inline && match ? (
-                                    <SyntaxHighlighter
-                                        style={vscDarkPlus}
-                                        language={match[1]}
-                                        PreTag="div"
-                                        className="rounded-lg text-sm my-2"
-                                        {...props}
-                                    >
-                                        {String(children).replace(/\n$/, '')}
-                                    </SyntaxHighlighter>
-                                ) : (
-                                    <code className={className} {...props}>
-                                        {children}
-                                    </code>
-                                )
-                            }
-                        }}
-                    >
-                        {node.content}
-                    </ReactMarkdown>
+                {isUser ? <UserIcon size={14} /> : <BotIcon size={14} />}
+            </div>
+
+            {/* Message Content */}
+            <div className={cn(
+                "flex flex-col max-w-[85%] relative",
+                isUser ? "items-end" : "items-start"
+            )}>
+                <div className={cn(
+                    "rounded-2xl px-4 py-3 transition-all duration-200",
+                    isUser
+                        ? "bg-primary text-primary-foreground rounded-br-sm"
+                        : "bg-muted/50 border border-border rounded-bl-sm"
+                )}>
+                    <div className={cn(
+                        "markdown-content prose prose-sm max-w-none",
+                        isUser
+                            ? "prose-invert"
+                            : "prose-neutral dark:prose-invert"
+                    )}>
+                        <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                                code({ node, inline, className, children, ...props }) {
+                                    const match = /language-(\w+)/.exec(className || '')
+                                    return !inline && match ? (
+                                        <SyntaxHighlighter
+                                            style={vscDarkPlus}
+                                            language={match[1]}
+                                            PreTag="div"
+                                            className="rounded-lg text-sm my-2 !bg-[#1e1e1e]"
+                                            {...props}
+                                        >
+                                            {String(children).replace(/\n$/, '')}
+                                        </SyntaxHighlighter>
+                                    ) : (
+                                        <code className={cn("bg-muted/50 px-1.5 py-0.5 rounded text-sm", className)} {...props}>
+                                            {children}
+                                        </code>
+                                    )
+                                }
+                            }}
+                        >
+                            {node.content}
+                        </ReactMarkdown>
+                    </div>
                 </div>
 
-                {/* Branch Navigation Overlay */}
+                {/* Branch Navigation */}
                 {hasSiblings && (
-                    <div className="absolute -bottom-7 left-0 right-0 flex justify-center gap-1 items-center">
+                    <div className="flex items-center gap-1 mt-2">
                         <Button
-                            variant="outline"
+                            variant="ghost"
                             size="icon"
                             onClick={handlePrev}
                             disabled={currentIndex === 0}
-                            className="h-6 w-6 rounded-lg"
+                            className="h-6 w-6"
                         >
                             <ChevronLeft size={12} />
                         </Button>
-                        <span className="bg-card border border-border px-2.5 py-1 rounded-lg text-xs font-medium text-foreground shadow-sm">
+                        <span className="text-xs font-medium text-muted-foreground px-2 py-0.5 bg-muted rounded">
                             {currentIndex + 1} / {children.length}
                         </span>
                         <Button
-                            variant="outline"
+                            variant="ghost"
                             size="icon"
                             onClick={handleNext}
                             disabled={currentIndex === children.length - 1}
-                            className="h-6 w-6 rounded-lg"
+                            className="h-6 w-6"
                         >
                             <ChevronRight size={12} />
                         </Button>
                     </div>
                 )}
+
+                {isOptimistic && (
+                    <span className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                        <Loader2 size={10} className="animate-spin" />
+                        Sending...
+                    </span>
+                )}
             </div>
-            {isOptimistic && <div className="text-xs text-muted-foreground mt-1.5 mr-2 font-medium">Sending...</div>}
         </div>
     );
-};
+});
+
+MessageItem.displayName = 'MessageItem';
 
 export default ChatWindow;
