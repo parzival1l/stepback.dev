@@ -1,12 +1,28 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useChatStore } from '../store';
-import { Send, ChevronLeft, ChevronRight, GitMerge, GitBranch, ChevronDown, ListTree } from 'lucide-react';
+import { Send, ChevronLeft, ChevronRight, GitMerge, GitBranch, ChevronDown } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import remarkGfm from 'remark-gfm';
 import ModelSelector from './ModelSelector';
 import { api } from '../utils/apiClient';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
 const ChatWindow = () => {
     const { tree, activeNodeId, setActiveNode, getLineage, getChildren, currentSessionId, loadHistory, fetchSessions, createSession, selectedModel, setSelectedModel } = useChatStore();
@@ -14,7 +30,6 @@ const ChatWindow = () => {
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [sendMode, setSendMode] = useState('reply'); // 'reply' (child) or 'branch' (sibling)
-    const [showDropdown, setShowDropdown] = useState(false);
     const [showModelSelector, setShowModelSelector] = useState(false);
 
     // Optimistic UI state
@@ -78,7 +93,6 @@ const ChatWindow = () => {
         }
 
         setInput(""); // Clear input
-        setShowDropdown(false);
         setIsLoading(true);
 
         // precise optimistic rendering
@@ -158,171 +172,176 @@ const ChatWindow = () => {
     }
 
     return (
-        <div className="flex flex-col h-full max-w-4xl mx-auto px-6 py-4">
-            {/* Toolbar */}
-            <div className="flex justify-between items-center pb-3">
-                {/* Model indicator */}
-                {selectedModel && (
-                    <div className="flex items-center gap-2 text-xs text-claude-secondary px-3 py-1.5 bg-claude-white rounded-lg border border-claude-secondary/30">
-                        <span className="font-medium text-claude-text">Model:</span>
-                        <span className="font-mono text-claude-text">{selectedModel}</span>
-                    </div>
-                )}
-                <div className="flex justify-end">
-                    <button
-                        onClick={handleSquash}
-                        disabled={isLoading || !activeNodeId}
-                        className="text-xs flex items-center gap-1.5 bg-claude-white
-                            text-claude-text px-4 py-2 rounded-lg border border-claude-secondary/30
-                            hover:bg-claude-light hover:border-claude-primary/40 hover:shadow-sm
-                            transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed
-                            font-medium"
-                        title="Summarize current branch into a single node"
-                    >
-                        <GitMerge size={14} />
-                        Squash / Summarize
-                    </button>
-                </div>
-            </div>
-
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto space-y-6 pb-4 scroll-smooth pr-2">
-                {lineage.map((node, index) => (
-                    <MessageItem key={node._id || node.id} node={node} animationDelay={index * 50} />
-                ))}
-
-                {/* Optimistic Message Display */}
-                {optimisticMessage && (
-                    <MessageItem key="optimistic" node={optimisticMessage} isOptimistic={true} />
-                )}
-
-                {/* Loading indicator */}
-                {isLoading && (
-                    <div className="flex justify-start animate-slide-up">
-                        <div className="glass rounded-2xl rounded-bl-sm px-5 py-4 flex items-center gap-3 shadow-lg shadow-claude-secondary/10 border border-claude-secondary/30">
-                            <div className="flex gap-1">
-                                <span className="w-2 h-2 bg-claude-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                                <span className="w-2 h-2 bg-claude-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                                <span className="w-2 h-2 bg-claude-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
-                            </div>
-                            <span className="text-sm font-medium text-claude-secondary">Thinking...</span>
-                        </div>
-                    </div>
-                )}
-
-                <div ref={messagesEndRef} />
-            </div>
-
-            {/* Input Area */}
-            <div className="border-t border-claude-secondary/30 pt-4 mt-2">
-                <div className="flex flex-col gap-2.5">
-                    {/* Branch Context Info */}
-                    {activeNodeId && (
-                        <div className="flex items-center gap-2 text-xs text-claude-secondary px-1">
-                            <GitBranch size={12} />
-                            <span>
-                                {sendMode === 'reply' ? 'Extending' : 'Branching off parent of'}:
-                                <span className="font-mono bg-claude-light px-1.5 py-0.5 rounded text-claude-primary ml-1">
-                                    {String(activeNodeId).slice(-6)}
-                                </span>
-                            </span>
+        <TooltipProvider>
+            <div className="flex flex-col h-full max-w-4xl mx-auto px-6 py-4">
+                {/* Toolbar */}
+                <div className="flex justify-between items-center pb-3">
+                    {/* Model indicator */}
+                    {selectedModel && (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground px-3 py-1.5 bg-card rounded-lg border border-border">
+                            <span className="font-medium text-foreground">Model:</span>
+                            <span className="font-mono text-foreground">{selectedModel}</span>
                         </div>
                     )}
-
-                    <div className="flex gap-3 items-end">
-                        {/* Input */}
-                        <div className="flex-1 relative">
-                            <textarea
-                                className="w-full border border-claude-secondary/40 rounded-xl px-4 py-3
-                                    focus:outline-none focus:ring-2 focus:ring-claude-primary/40 focus:border-claude-primary/60
-                                    disabled:bg-claude-light disabled:text-claude-secondary
-                                    resize-none shadow-sm bg-claude-white/80 backdrop-blur-sm
-                                    placeholder:text-claude-secondary text-claude-text
-                                    transition-all duration-200"
-                                rows={1}
-                                style={{ minHeight: '48px' }}
-                                value={input}
-                                onChange={(e) => setInput(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault();
-                                        sendMessage();
-                                    }
-                                }}
-                                placeholder={sendMode === 'reply' ? "Type a message..." : "Type to start new branch..."}
-                                disabled={isLoading}
-                            />
-                        </div>
-
-                        {/* Split Button for Send/Branch */}
-                        <div className="relative flex flex-col items-end">
-                            <div className="flex items-center shadow-lg shadow-claude-primary/20 rounded-xl overflow-hidden">
-                                <button
-                                    onClick={sendMessage}
-                                    className="gradient-primary text-white px-4 py-3
-                                        hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed
-                                        flex items-center justify-center transition-all duration-200
-                                        active:scale-95"
-                                    disabled={!input.trim() || isLoading}
-                                    title={sendMode === 'reply' ? "Send Message" : "Create New Branch"}
+                    <div className="flex justify-end">
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleSquash}
+                                    disabled={isLoading || !activeNodeId}
+                                    className="gap-1.5"
                                 >
-                                    {sendMode === 'reply' ? <Send size={18} /> : <GitBranch size={18} />}
-                                </button>
-                                <div className="w-px h-6 bg-white/30"></div>
-                                <button
-                                    onClick={() => setShowDropdown(!showDropdown)}
-                                    className="gradient-primary text-white px-2 py-3
-                                        hover:brightness-110 disabled:opacity-50
-                                        flex items-center justify-center transition-all duration-200"
+                                    <GitMerge size={14} />
+                                    Squash / Summarize
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Summarize current branch into a single node</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </div>
+                </div>
+
+                {/* Messages */}
+                <ScrollArea className="flex-1 pb-4 pr-2">
+                    <div className="space-y-6">
+                        {lineage.map((node, index) => (
+                            <MessageItem key={node._id || node.id} node={node} animationDelay={index * 50} />
+                        ))}
+
+                        {/* Optimistic Message Display */}
+                        {optimisticMessage && (
+                            <MessageItem key="optimistic" node={optimisticMessage} isOptimistic={true} />
+                        )}
+
+                        {/* Loading indicator */}
+                        {isLoading && (
+                            <div className="flex justify-start animate-slide-up">
+                                <div className="glass rounded-2xl rounded-bl-sm px-5 py-4 flex items-center gap-3 shadow-lg border border-border">
+                                    <div className="flex gap-1">
+                                        <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                                        <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                                        <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                                    </div>
+                                    <span className="text-sm font-medium text-muted-foreground">Thinking...</span>
+                                </div>
+                            </div>
+                        )}
+
+                        <div ref={messagesEndRef} />
+                    </div>
+                </ScrollArea>
+
+                {/* Input Area */}
+                <div className="border-t border-border pt-4 mt-2">
+                    <div className="flex flex-col gap-2.5">
+                        {/* Branch Context Info */}
+                        {activeNodeId && (
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">
+                                <GitBranch size={12} />
+                                <span>
+                                    {sendMode === 'reply' ? 'Extending' : 'Branching off parent of'}:
+                                    <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-primary ml-1">
+                                        {String(activeNodeId).slice(-6)}
+                                    </span>
+                                </span>
+                            </div>
+                        )}
+
+                        <div className="flex gap-3 items-end">
+                            {/* Input */}
+                            <div className="flex-1 relative">
+                                <Textarea
+                                    className="min-h-[48px] resize-none rounded-xl shadow-sm"
+                                    rows={1}
+                                    value={input}
+                                    onChange={(e) => setInput(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                            e.preventDefault();
+                                            sendMessage();
+                                        }
+                                    }}
+                                    placeholder={sendMode === 'reply' ? "Type a message..." : "Type to start new branch..."}
                                     disabled={isLoading}
-                                >
-                                    <ChevronDown size={16} className={`transition-transform duration-200 ${showDropdown ? 'rotate-180' : ''}`} />
-                                </button>
+                                />
                             </div>
 
-                            {/* Dropdown Menu */}
-                            {showDropdown && (
-                                <div className="absolute bottom-14 right-0 bg-claude-white/95 backdrop-blur-xl shadow-2xl shadow-claude-secondary/20
-                                    border border-claude-secondary/30 rounded-xl p-1.5 min-w-[220px] z-20 animate-slide-in-from-bottom">
-                                    <button
-                                        className={`w-full text-left px-3 py-2.5 text-sm rounded-lg flex items-center gap-3 transition-all duration-150
-                                            ${sendMode === 'reply'
-                                                ? 'bg-claude-primary/10 text-claude-text ring-1 ring-claude-primary/30'
-                                                : 'hover:bg-claude-light text-claude-text'}`}
-                                        onClick={() => { setSendMode('reply'); setShowDropdown(false); }}
-                                    >
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center
-                                            ${sendMode === 'reply' ? 'bg-claude-primary/20' : 'bg-claude-light'}`}>
-                                            <Send size={14} />
-                                        </div>
-                                        <div>
-                                            <div className="font-semibold">Reply</div>
-                                            <div className="text-xs text-claude-secondary">Continue this conversation</div>
-                                        </div>
-                                    </button>
-                                    <button
-                                        className={`w-full text-left px-3 py-2.5 text-sm rounded-lg flex items-center gap-3 transition-all duration-150 mt-1
-                                            ${sendMode === 'branch'
-                                                ? 'bg-claude-primary/10 text-claude-text ring-1 ring-claude-primary/30'
-                                                : 'hover:bg-claude-light text-claude-text'}`}
-                                        onClick={() => { setSendMode('branch'); setShowDropdown(false); }}
-                                    >
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center
-                                            ${sendMode === 'branch' ? 'bg-claude-primary/20' : 'bg-claude-light'}`}>
-                                            <GitBranch size={14} />
-                                        </div>
-                                        <div>
-                                            <div className="font-semibold">New Branch</div>
-                                            <div className="text-xs text-claude-secondary">Split from previous node</div>
-                                        </div>
-                                    </button>
+                            {/* Split Button for Send/Branch */}
+                            <div className="relative flex flex-col items-end">
+                                <div className="flex items-center shadow-lg rounded-xl overflow-hidden">
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                onClick={sendMessage}
+                                                disabled={!input.trim() || isLoading}
+                                                className="rounded-r-none px-4 py-3 h-auto"
+                                            >
+                                                {sendMode === 'reply' ? <Send size={18} /> : <GitBranch size={18} />}
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>{sendMode === 'reply' ? "Send Message" : "Create New Branch"}</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                    <div className="w-px h-6 bg-primary-foreground/30"></div>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button
+                                                disabled={isLoading}
+                                                className="rounded-l-none px-2 py-3 h-auto"
+                                            >
+                                                <ChevronDown size={16} />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-[220px]">
+                                            <DropdownMenuItem
+                                                onClick={() => setSendMode('reply')}
+                                                className={cn(
+                                                    "flex items-center gap-3 p-3 cursor-pointer",
+                                                    sendMode === 'reply' && "bg-accent"
+                                                )}
+                                            >
+                                                <div className={cn(
+                                                    "w-8 h-8 rounded-lg flex items-center justify-center",
+                                                    sendMode === 'reply' ? "bg-primary/20" : "bg-muted"
+                                                )}>
+                                                    <Send size={14} />
+                                                </div>
+                                                <div>
+                                                    <div className="font-semibold">Reply</div>
+                                                    <div className="text-xs text-muted-foreground">Continue this conversation</div>
+                                                </div>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                onClick={() => setSendMode('branch')}
+                                                className={cn(
+                                                    "flex items-center gap-3 p-3 cursor-pointer",
+                                                    sendMode === 'branch' && "bg-accent"
+                                                )}
+                                            >
+                                                <div className={cn(
+                                                    "w-8 h-8 rounded-lg flex items-center justify-center",
+                                                    sendMode === 'branch' ? "bg-primary/20" : "bg-muted"
+                                                )}>
+                                                    <GitBranch size={14} />
+                                                </div>
+                                                <div>
+                                                    <div className="font-semibold">New Branch</div>
+                                                    <div className="text-xs text-muted-foreground">Split from previous node</div>
+                                                </div>
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </div>
-                            )}
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </TooltipProvider>
     );
 };
 
@@ -354,18 +373,21 @@ const MessageItem = ({ node, isOptimistic = false, animationDelay = 0 }) => {
 
     return (
         <div
-            className={`group flex flex-col ${isUser ? 'items-end' : 'items-start'} ${isOptimistic ? 'opacity-60' : ''} animate-slide-up`}
+            className={cn(
+                "group flex flex-col animate-slide-up",
+                isUser ? "items-end" : "items-start",
+                isOptimistic && "opacity-60"
+            )}
             style={{ animationDelay: `${animationDelay}ms` }}
         >
-            <div className={`
-                max-w-[85%] rounded-2xl px-5 py-3.5 relative
-                transition-all duration-200
-                ${isUser
-                    ? 'bg-claude-white text-claude-text rounded-br-sm shadow-lg shadow-claude-secondary/10 border border-claude-secondary/20'
-                    : 'bg-claude-primary text-white rounded-bl-sm shadow-lg shadow-claude-secondary/20'
-                } ${bubbleClass}
-            `}>
-                <div className={`markdown-content ${isUser ? 'user-message' : 'assistant-message'}`}>
+            <div className={cn(
+                "max-w-[85%] rounded-2xl px-5 py-3.5 relative transition-all duration-200",
+                isUser
+                    ? "bg-card text-foreground rounded-br-sm shadow-lg border border-border"
+                    : "bg-primary text-primary-foreground rounded-bl-sm shadow-lg",
+                bubbleClass
+            )}>
+                <div className={cn("markdown-content", isUser ? "user-message" : "assistant-message")}>
                     <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={{
@@ -396,31 +418,31 @@ const MessageItem = ({ node, isOptimistic = false, animationDelay = 0 }) => {
                 {/* Branch Navigation Overlay */}
                 {hasSiblings && (
                     <div className="absolute -bottom-7 left-0 right-0 flex justify-center gap-1 items-center">
-                        <button
+                        <Button
+                            variant="outline"
+                            size="icon"
                             onClick={handlePrev}
                             disabled={currentIndex === 0}
-                            className="p-1.5 rounded-lg bg-claude-white border border-claude-secondary/30 shadow-sm
-                                hover:bg-claude-light hover:border-claude-primary/40 disabled:opacity-30
-                                transition-all duration-150 disabled:cursor-not-allowed"
+                            className="h-6 w-6 rounded-lg"
                         >
-                            <ChevronLeft size={12} className="text-claude-text" />
-                        </button>
-                        <span className="bg-claude-white border border-claude-secondary/30 px-2.5 py-1 rounded-lg text-xs font-medium text-claude-text shadow-sm">
+                            <ChevronLeft size={12} />
+                        </Button>
+                        <span className="bg-card border border-border px-2.5 py-1 rounded-lg text-xs font-medium text-foreground shadow-sm">
                             {currentIndex + 1} / {children.length}
                         </span>
-                        <button
+                        <Button
+                            variant="outline"
+                            size="icon"
                             onClick={handleNext}
                             disabled={currentIndex === children.length - 1}
-                            className="p-1.5 rounded-lg bg-claude-white border border-claude-secondary/30 shadow-sm
-                                hover:bg-claude-light hover:border-claude-primary/40 disabled:opacity-30
-                                transition-all duration-150 disabled:cursor-not-allowed"
+                            className="h-6 w-6 rounded-lg"
                         >
-                            <ChevronRight size={12} className="text-claude-text" />
-                        </button>
+                            <ChevronRight size={12} />
+                        </Button>
                     </div>
                 )}
             </div>
-            {isOptimistic && <div className="text-xs text-claude-secondary mt-1.5 mr-2 font-medium">Sending...</div>}
+            {isOptimistic && <div className="text-xs text-muted-foreground mt-1.5 mr-2 font-medium">Sending...</div>}
         </div>
     );
 };
