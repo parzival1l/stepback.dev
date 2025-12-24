@@ -1,32 +1,38 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap');
 
 @layer base {
   :root {
-    /* Color palette */
-    --primary-50: #eff6ff;
-    --primary-100: #dbeafe;
-    --primary-200: #bfdbfe;
-    --primary-400: #60a5fa;
-    --primary-500: #3b82f6;
-    --primary-600: #2563eb;
-    --primary-700: #1d4ed8;
+    /* Claude color palette */
+    --claude-primary: #c15f3c;      /* Reddish-brown/burnt orange */
+    --claude-secondary: #b1ada1;    /* Light greyish-brown/taupe */
+    --claude-light: #f4f3ee;         /* Very light off-white/cream */
+    --claude-white: #ffffff;         /* Pure white */
 
-    --accent-400: #a78bfa;
-    --accent-500: #8b5cf6;
-    --accent-600: #7c3aed;
+    /* Legacy color mappings for compatibility */
+    --primary-50: #fef5f3;
+    --primary-100: #fce8e3;
+    --primary-200: #f8d1c7;
+    --primary-400: #d97757;
+    --primary-500: #c15f3c;
+    --primary-600: #a84f2f;
+    --primary-700: #8f3f22;
 
-    --glass-bg: rgba(255, 255, 255, 0.7);
-    --glass-border: rgba(255, 255, 255, 0.3);
+    --accent-400: #c4c0b5;
+    --accent-500: #b1ada1;
+    --accent-600: #9e9a8d;
+
+    --glass-bg: rgba(244, 243, 238, 0.7);
+    --glass-border: rgba(177, 173, 161, 0.3);
     --glass-shadow: rgba(0, 0, 0, 0.05);
   }
 
   * {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Lora', Georgia, 'Times New Roman', serif;
   }
 
   body {
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    background: var(--claude-light);
     min-height: 100vh;
   }
 }
@@ -42,12 +48,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
+  background: rgba(177, 173, 161, 0.3);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(177, 173, 161, 0.5);
 }
 
 /* Animations */
@@ -89,11 +95,11 @@
 
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+    box-shadow: 0 0 0 0 rgba(193, 95, 60, 0.4);
   }
 
   50% {
-    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0);
+    box-shadow: 0 0 0 8px rgba(193, 95, 60, 0);
   }
 }
 
@@ -139,11 +145,11 @@
 
 /* Gradient utilities */
 .gradient-primary {
-  background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
+  background: linear-gradient(135deg, var(--claude-primary) 0%, var(--primary-600) 100%);
 }
 
 .gradient-accent {
-  background: linear-gradient(135deg, var(--accent-500) 0%, var(--accent-600) 100%);
+  background: linear-gradient(135deg, var(--claude-secondary) 0%, var(--accent-600) 100%);
 }
 
 .gradient-border {
@@ -173,7 +179,7 @@
 }
 
 .resize-handle:hover {
-  background: linear-gradient(to bottom, transparent, var(--primary-400), transparent);
+  background: linear-gradient(to bottom, transparent, var(--claude-primary), transparent);
 }
 
 .resize-handle::after {
@@ -190,5 +196,5 @@
 }
 
 .resize-handle:hover::after {
-  background: var(--primary-400);
+  background: var(--claude-primary);
 }

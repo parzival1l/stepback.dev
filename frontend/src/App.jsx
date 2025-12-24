@@ -27,33 +27,33 @@ function App() {
   };
 
   return (
-    <div className="h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 text-gray-900 font-sans flex flex-col overflow-hidden">
+    <div className="h-screen bg-claude-light text-claude-primary font-serif flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="border-b border-slate-200/60 px-5 py-3.5 flex items-center justify-between glass shrink-0 z-20">
+      <header className="border-b border-claude-secondary/30 px-5 py-3.5 flex items-center justify-between glass shrink-0 z-20">
         <div className="flex items-center gap-6">
           {/* Logo */}
           <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center shadow-lg shadow-blue-500/20">
-              <GitGraph size={20} className="text-white" />
+            <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center shadow-lg shadow-claude-primary/20">
+              <GitGraph size={20} className="text-claude-white" />
             </div>
             <div>
-              <h1 className="text-lg font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-lg font-bold text-claude-primary">
                 stepback.dev
               </h1>
-              <div className="text-[10px] font-medium text-slate-400 tracking-wide uppercase">
+              <div className="text-[10px] font-medium text-claude-secondary tracking-wide uppercase">
                 Git-Style LLM Interface
               </div>
             </div>
           </div>
 
           {/* View Toggles */}
-          <div className="flex bg-slate-100/80 rounded-xl p-1 ml-4 border border-slate-200/50">
+          <div className="flex bg-claude-light rounded-xl p-1 ml-4 border border-claude-secondary/30">
             <button
               onClick={() => setActiveView('chat')}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
                 ${activeView === 'chat'
-                  ? 'bg-white shadow-md shadow-slate-200/50 text-blue-600 ring-1 ring-slate-200/50'
-                  : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
+                  ? 'bg-claude-white shadow-md shadow-claude-secondary/20 text-claude-primary ring-1 ring-claude-secondary/30'
+                  : 'text-claude-secondary hover:text-claude-primary hover:bg-claude-white/50'
                 }`}
             >
               <MessageSquare size={16} />
@@ -63,8 +63,8 @@ function App() {
               onClick={() => setActiveView('graph')}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
                 ${activeView === 'graph'
-                  ? 'bg-white shadow-md shadow-slate-200/50 text-purple-600 ring-1 ring-slate-200/50'
-                  : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
+                  ? 'bg-claude-white shadow-md shadow-claude-secondary/20 text-claude-primary ring-1 ring-claude-secondary/30'
+                  : 'text-claude-secondary hover:text-claude-primary hover:bg-claude-white/50'
                 }`}
             >
               <GitGraph size={16} />
@@ -80,10 +80,10 @@ function App() {
         {isSidebarCollapsed && (
           <button
             onClick={handleToggleSidebar}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-8 h-12 rounded-r-lg bg-white border border-slate-200/80
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-8 h-12 rounded-r-lg bg-claude-white border border-claude-secondary/40
                 shadow-md hover:shadow-lg flex items-center justify-center
-                hover:bg-slate-50 transition-all duration-200
-                text-slate-500 hover:text-slate-700"
+                hover:bg-claude-light transition-all duration-200
+                text-claude-secondary hover:text-claude-primary"
             title="Expand sidebar"
           >
             <ChevronRight size={16} />
@@ -101,7 +101,7 @@ function App() {
             collapsible={true}
             onCollapse={() => setIsSidebarCollapsed(true)}
             onExpand={() => setIsSidebarCollapsed(false)}
-            className="bg-slate-50/50 relative"
+            className="bg-claude-light relative"
           >
             <SessionSidebar
               isCollapsed={isSidebarCollapsed}
@@ -111,12 +111,12 @@ function App() {
 
           {/* Resize Handle */}
           {!isSidebarCollapsed && (
-            <PanelResizeHandle className="resize-handle hover:bg-gradient-to-b hover:from-transparent hover:via-blue-400/30 hover:to-transparent" />
+            <PanelResizeHandle className="resize-handle hover:bg-gradient-to-b hover:from-transparent hover:via-claude-primary/30 hover:to-transparent" />
           )}
 
           {/* Main Content Panel */}
           <Panel minSize={50}>
-            <div className="h-full w-full overflow-hidden relative bg-gradient-to-br from-slate-50/50 to-white">
+            <div className="h-full w-full overflow-hidden relative bg-claude-light">
               {/* Chat View */}
               <div className={`h-full w-full ${activeView === 'chat' ? 'block' : 'hidden'}`}>
                 <ChatWindow />

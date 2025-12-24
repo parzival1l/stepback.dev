@@ -172,8 +172,8 @@ const ChatWindow = () => {
             <div className="flex justify-between items-center pb-3">
                 {/* Model indicator */}
                 {selectedModel && (
-                    <div className="flex items-center gap-2 text-xs text-slate-500 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-200/60">
-                        <span className="font-medium text-slate-600">Model:</span>
+                    <div className="flex items-center gap-2 text-xs text-claude-secondary px-3 py-1.5 bg-claude-light rounded-lg border border-claude-secondary/30">
+                        <span className="font-medium text-claude-primary">Model:</span>
                         <span className="font-mono">{selectedModel}</span>
                     </div>
                 )}
@@ -181,9 +181,9 @@ const ChatWindow = () => {
                     <button
                         onClick={handleSquash}
                         disabled={isLoading || !activeNodeId}
-                        className="text-xs flex items-center gap-1.5 bg-gradient-to-r from-purple-50 to-violet-50
-                            text-purple-700 px-4 py-2 rounded-lg border border-purple-200/60
-                            hover:from-purple-100 hover:to-violet-100 hover:border-purple-300 hover:shadow-sm
+                        className="text-xs flex items-center gap-1.5 bg-claude-light
+                            text-claude-primary px-4 py-2 rounded-lg border border-claude-secondary/30
+                            hover:bg-claude-secondary/10 hover:border-claude-primary/40 hover:shadow-sm
                             transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed
                             font-medium"
                         title="Summarize current branch into a single node"
@@ -208,13 +208,13 @@ const ChatWindow = () => {
                 {/* Loading indicator */}
                 {isLoading && (
                     <div className="flex justify-start animate-slide-up">
-                        <div className="glass rounded-2xl rounded-bl-sm px-5 py-4 flex items-center gap-3 shadow-lg shadow-slate-100/50 border border-slate-200/60">
+                        <div className="glass rounded-2xl rounded-bl-sm px-5 py-4 flex items-center gap-3 shadow-lg shadow-claude-secondary/10 border border-claude-secondary/30">
                             <div className="flex gap-1">
-                                <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                                <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                                <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                                <span className="w-2 h-2 bg-claude-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                                <span className="w-2 h-2 bg-claude-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                                <span className="w-2 h-2 bg-claude-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
                             </div>
-                            <span className="text-sm font-medium text-slate-500">Thinking...</span>
+                            <span className="text-sm font-medium text-claude-secondary">Thinking...</span>
                         </div>
                     </div>
                 )}
@@ -223,15 +223,15 @@ const ChatWindow = () => {
             </div>
 
             {/* Input Area */}
-            <div className="border-t border-slate-200/60 pt-4 mt-2">
+            <div className="border-t border-claude-secondary/30 pt-4 mt-2">
                 <div className="flex flex-col gap-2.5">
                     {/* Branch Context Info */}
                     {activeNodeId && (
-                        <div className="flex items-center gap-2 text-xs text-slate-400 px-1">
+                        <div className="flex items-center gap-2 text-xs text-claude-secondary px-1">
                             <GitBranch size={12} />
                             <span>
                                 {sendMode === 'reply' ? 'Extending' : 'Branching off parent of'}:
-                                <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 ml-1">
+                                <span className="font-mono bg-claude-light px-1.5 py-0.5 rounded text-claude-primary ml-1">
                                     {String(activeNodeId).slice(-6)}
                                 </span>
                             </span>
@@ -242,11 +242,11 @@ const ChatWindow = () => {
                         {/* Input */}
                         <div className="flex-1 relative">
                             <textarea
-                                className="w-full border border-slate-200/80 rounded-xl px-4 py-3
-                                    focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-400
-                                    disabled:bg-slate-50 disabled:text-slate-400
-                                    resize-none shadow-sm bg-white/80 backdrop-blur-sm
-                                    placeholder:text-slate-400 text-slate-700
+                                className="w-full border border-claude-secondary/40 rounded-xl px-4 py-3
+                                    focus:outline-none focus:ring-2 focus:ring-claude-primary/40 focus:border-claude-primary/60
+                                    disabled:bg-claude-light disabled:text-claude-secondary
+                                    resize-none shadow-sm bg-claude-white/80 backdrop-blur-sm
+                                    placeholder:text-claude-secondary text-claude-primary
                                     transition-all duration-200"
                                 rows={1}
                                 style={{ minHeight: '48px' }}
@@ -265,10 +265,10 @@ const ChatWindow = () => {
 
                         {/* Split Button for Send/Branch */}
                         <div className="relative flex flex-col items-end">
-                            <div className="flex items-center shadow-lg shadow-blue-500/20 rounded-xl overflow-hidden">
+                            <div className="flex items-center shadow-lg shadow-claude-primary/20 rounded-xl overflow-hidden">
                                 <button
                                     onClick={sendMessage}
-                                    className="gradient-primary text-white px-4 py-3
+                                    className="gradient-primary text-claude-white px-4 py-3
                                         hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed
                                         flex items-center justify-center transition-all duration-200
                                         active:scale-95"
@@ -277,10 +277,10 @@ const ChatWindow = () => {
                                 >
                                     {sendMode === 'reply' ? <Send size={18} /> : <GitBranch size={18} />}
                                 </button>
-                                <div className="w-px h-6 bg-blue-700/30"></div>
+                                <div className="w-px h-6 bg-claude-primary/30"></div>
                                 <button
                                     onClick={() => setShowDropdown(!showDropdown)}
-                                    className="gradient-primary text-white px-2 py-3
+                                    className="gradient-primary text-claude-white px-2 py-3
                                         hover:brightness-110 disabled:opacity-50
                                         flex items-center justify-center transition-all duration-200"
                                     disabled={isLoading}
@@ -291,38 +291,38 @@ const ChatWindow = () => {
 
                             {/* Dropdown Menu */}
                             {showDropdown && (
-                                <div className="absolute bottom-14 right-0 bg-white/95 backdrop-blur-xl shadow-2xl shadow-slate-200/50
-                                    border border-slate-200/60 rounded-xl p-1.5 min-w-[220px] z-20 animate-slide-in-from-bottom">
+                                <div className="absolute bottom-14 right-0 bg-claude-white/95 backdrop-blur-xl shadow-2xl shadow-claude-secondary/20
+                                    border border-claude-secondary/30 rounded-xl p-1.5 min-w-[220px] z-20 animate-slide-in-from-bottom">
                                     <button
                                         className={`w-full text-left px-3 py-2.5 text-sm rounded-lg flex items-center gap-3 transition-all duration-150
                                             ${sendMode === 'reply'
-                                                ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200'
-                                                : 'hover:bg-slate-50 text-slate-700'}`}
+                                                ? 'bg-claude-primary/10 text-claude-primary ring-1 ring-claude-primary/30'
+                                                : 'hover:bg-claude-light text-claude-primary'}`}
                                         onClick={() => { setSendMode('reply'); setShowDropdown(false); }}
                                     >
                                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center
-                                            ${sendMode === 'reply' ? 'bg-blue-100' : 'bg-slate-100'}`}>
+                                            ${sendMode === 'reply' ? 'bg-claude-primary/20' : 'bg-claude-light'}`}>
                                             <Send size={14} />
                                         </div>
                                         <div>
                                             <div className="font-semibold">Reply</div>
-                                            <div className="text-xs text-slate-500">Continue this conversation</div>
+                                            <div className="text-xs text-claude-secondary">Continue this conversation</div>
                                         </div>
                                     </button>
                                     <button
                                         className={`w-full text-left px-3 py-2.5 text-sm rounded-lg flex items-center gap-3 transition-all duration-150 mt-1
                                             ${sendMode === 'branch'
-                                                ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200'
-                                                : 'hover:bg-slate-50 text-slate-700'}`}
+                                                ? 'bg-claude-primary/10 text-claude-primary ring-1 ring-claude-primary/30'
+                                                : 'hover:bg-claude-light text-claude-primary'}`}
                                         onClick={() => { setSendMode('branch'); setShowDropdown(false); }}
                                     >
                                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center
-                                            ${sendMode === 'branch' ? 'bg-blue-100' : 'bg-slate-100'}`}>
+                                            ${sendMode === 'branch' ? 'bg-claude-primary/20' : 'bg-claude-light'}`}>
                                             <GitBranch size={14} />
                                         </div>
                                         <div>
                                             <div className="font-semibold">New Branch</div>
-                                            <div className="text-xs text-slate-500">Split from previous node</div>
+                                            <div className="text-xs text-claude-secondary">Split from previous node</div>
                                         </div>
                                     </button>
                                 </div>
@@ -368,8 +368,8 @@ const MessageItem = ({ node, isOptimistic = false, animationDelay = 0 }) => {
                 max-w-[85%] rounded-2xl px-5 py-3.5 relative
                 transition-all duration-200
                 ${isUser
-                    ? 'gradient-primary text-white rounded-br-sm shadow-lg shadow-blue-500/20'
-                    : 'glass border border-slate-200/60 text-slate-800 rounded-bl-sm shadow-lg shadow-slate-100/50'
+                    ? 'gradient-primary text-claude-white rounded-br-sm shadow-lg shadow-claude-primary/20'
+                    : 'glass border border-claude-secondary/30 text-claude-primary rounded-bl-sm shadow-lg shadow-claude-secondary/10'
                 }
             `}>
                 <div className={`markdown-content ${isUser ? 'prose-invert' : ''}`}>
@@ -406,28 +406,28 @@ const MessageItem = ({ node, isOptimistic = false, animationDelay = 0 }) => {
                         <button
                             onClick={handlePrev}
                             disabled={currentIndex === 0}
-                            className="p-1.5 rounded-lg bg-white border border-slate-200 shadow-sm
-                                hover:bg-slate-50 hover:border-slate-300 disabled:opacity-30
+                            className="p-1.5 rounded-lg bg-claude-white border border-claude-secondary/30 shadow-sm
+                                hover:bg-claude-light hover:border-claude-primary/40 disabled:opacity-30
                                 transition-all duration-150 disabled:cursor-not-allowed"
                         >
-                            <ChevronLeft size={12} className="text-slate-600" />
+                            <ChevronLeft size={12} className="text-claude-primary" />
                         </button>
-                        <span className="bg-white border border-slate-200 px-2.5 py-1 rounded-lg text-xs font-medium text-slate-600 shadow-sm">
+                        <span className="bg-claude-white border border-claude-secondary/30 px-2.5 py-1 rounded-lg text-xs font-medium text-claude-primary shadow-sm">
                             {currentIndex + 1} / {children.length}
                         </span>
                         <button
                             onClick={handleNext}
                             disabled={currentIndex === children.length - 1}
-                            className="p-1.5 rounded-lg bg-white border border-slate-200 shadow-sm
-                                hover:bg-slate-50 hover:border-slate-300 disabled:opacity-30
+                            className="p-1.5 rounded-lg bg-claude-white border border-claude-secondary/30 shadow-sm
+                                hover:bg-claude-light hover:border-claude-primary/40 disabled:opacity-30
                                 transition-all duration-150 disabled:cursor-not-allowed"
                         >
-                            <ChevronRight size={12} className="text-slate-600" />
+                            <ChevronRight size={12} className="text-claude-primary" />
                         </button>
                     </div>
                 )}
             </div>
-            {isOptimistic && <div className="text-xs text-slate-400 mt-1.5 mr-2 font-medium">Sending...</div>}
+            {isOptimistic && <div className="text-xs text-claude-secondary mt-1.5 mr-2 font-medium">Sending...</div>}
         </div>
     );
 };
