@@ -48,9 +48,9 @@ const ModelSelector = ({ selectedModel, onModelSelect, onStart }) => {
                 {/* Header */}
                 <div className="text-center space-y-2">
                     <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center shadow-lg shadow-claude-primary/20 mx-auto mb-4">
-                        <Sparkles size={28} className="text-claude-white" />
+                        <Sparkles size={28} className="text-white" />
                     </div>
-                    <h2 className="text-2xl font-bold text-claude-primary">
+                    <h2 className="text-2xl font-bold text-claude-text">
                         Choose Your Model
                     </h2>
                     <p className="text-sm text-claude-secondary">
@@ -71,7 +71,7 @@ const ModelSelector = ({ selectedModel, onModelSelect, onStart }) => {
                                 <Sparkles size={18} className="text-claude-primary" />
                             </div>
                             <div>
-                                <div className="font-semibold text-claude-primary">
+                                <div className="font-semibold text-claude-text">
                                     {selectedModelConfig?.name || "Select a model"}
                                 </div>
                                 <div className="text-xs text-claude-secondary">
@@ -98,8 +98,8 @@ const ModelSelector = ({ selectedModel, onModelSelect, onStart }) => {
                                     }}
                                     className={`w-full text-left px-4 py-3.5 flex items-center gap-3 transition-all duration-150
                                         ${selectedModel === model.id
-                                            ? 'bg-claude-primary/10 text-claude-primary ring-1 ring-claude-primary/30'
-                                            : 'hover:bg-claude-light text-claude-primary'
+                                            ? 'bg-claude-primary/10 text-claude-text ring-1 ring-claude-primary/30'
+                                            : 'hover:bg-claude-light text-claude-text'
                                         }`}
                                 >
                                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center
@@ -123,7 +123,7 @@ const ModelSelector = ({ selectedModel, onModelSelect, onStart }) => {
                 {selectedModel && (
                     <button
                         onClick={onStart}
-                        className="w-full gradient-primary text-claude-white px-6 py-3.5 rounded-xl
+                        className="w-full gradient-primary text-white px-6 py-3.5 rounded-xl
                             font-semibold shadow-lg shadow-claude-primary/20
                             hover:brightness-110 active:scale-95
                             transition-all duration-200"

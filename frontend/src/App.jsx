@@ -29,17 +29,17 @@ function App() {
   };
 
   return (
-    <div className="h-screen bg-claude-light text-claude-primary font-serif flex flex-col overflow-hidden">
+    <div className="h-screen bg-claude-light text-claude-text font-serif flex flex-col overflow-hidden">
       {/* Header */}
       <header className="border-b border-claude-secondary/30 px-5 py-3.5 flex items-center justify-between glass shrink-0 z-20">
         <div className="flex items-center gap-6">
           {/* Logo */}
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center shadow-lg shadow-claude-primary/20">
-              <GitGraph size={20} className="text-claude-white" />
+              <GitGraph size={20} className="text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-claude-primary">
+              <h1 className="text-lg font-bold text-claude-text">
                 stepback.dev
               </h1>
               <div className="text-[10px] font-medium text-claude-secondary tracking-wide uppercase">
@@ -54,8 +54,8 @@ function App() {
               onClick={() => setActiveView('chat')}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
                 ${activeView === 'chat'
-                  ? 'bg-claude-white shadow-md shadow-claude-secondary/20 text-claude-primary ring-1 ring-claude-secondary/30'
-                  : 'text-claude-secondary hover:text-claude-primary hover:bg-claude-white/50'
+                  ? 'bg-claude-white shadow-md shadow-claude-secondary/20 text-claude-text ring-1 ring-claude-secondary/30'
+                  : 'text-claude-secondary hover:text-claude-text hover:bg-claude-white/50'
                 }`}
             >
               <MessageSquare size={16} />
@@ -65,8 +65,8 @@ function App() {
               onClick={() => setActiveView('graph')}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
                 ${activeView === 'graph'
-                  ? 'bg-claude-white shadow-md shadow-claude-secondary/20 text-claude-primary ring-1 ring-claude-secondary/30'
-                  : 'text-claude-secondary hover:text-claude-primary hover:bg-claude-white/50'
+                  ? 'bg-claude-white shadow-md shadow-claude-secondary/20 text-claude-text ring-1 ring-claude-secondary/30'
+                  : 'text-claude-secondary hover:text-claude-text hover:bg-claude-white/50'
                 }`}
             >
               <GitGraph size={16} />
@@ -80,7 +80,7 @@ function App() {
           onClick={toggleTheme}
           className="p-2.5 rounded-xl border border-claude-secondary/30 bg-claude-white
             hover:bg-claude-light transition-all duration-200
-            text-claude-secondary hover:text-claude-primary
+            text-claude-secondary hover:text-claude-text
             shadow-sm hover:shadow-md"
           title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
         >
@@ -97,7 +97,7 @@ function App() {
             className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-8 h-12 rounded-r-lg bg-claude-white border border-claude-secondary/40
                 shadow-md hover:shadow-lg flex items-center justify-center
                 hover:bg-claude-light transition-all duration-200
-                text-claude-secondary hover:text-claude-primary"
+                text-claude-secondary hover:text-claude-text"
             title="Expand sidebar"
           >
             <ChevronRight size={16} />

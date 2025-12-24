@@ -13,8 +13,15 @@ export function useDarkMode() {
   const isDark = theme === 'dark';
 
   useEffect(() => {
-    // Update the HTML element's data-theme attribute
+    // Update the HTML element's data-theme attribute (for existing theme)
     document.documentElement.setAttribute('data-theme', theme);
+
+    // Add/remove 'dark' class for shadcn theme
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
 
     // Persist in localStorage
     localStorage.setItem('theme', theme);

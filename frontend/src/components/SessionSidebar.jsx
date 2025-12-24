@@ -101,7 +101,7 @@ const SessionSidebar = ({ isCollapsed, onToggleCollapse }) => {
                 className="absolute top-4 -right-3 z-10 w-6 h-6 rounded-full bg-claude-white border border-claude-secondary/40
                     shadow-md hover:shadow-lg flex items-center justify-center
                     hover:bg-claude-light transition-all duration-200
-                    text-claude-secondary hover:text-claude-primary"
+                    text-claude-secondary hover:text-claude-text"
                 title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
                 <ChevronLeft
@@ -114,7 +114,7 @@ const SessionSidebar = ({ isCollapsed, onToggleCollapse }) => {
             <div className="p-4">
                 <button
                     onClick={handleCreateSession}
-                    className="w-full flex items-center justify-center gap-2.5 gradient-primary text-claude-white py-2.5 px-4 rounded-xl
+                    className="w-full flex items-center justify-center gap-2.5 gradient-primary text-white py-2.5 px-4 rounded-xl
                         font-semibold text-sm shadow-lg shadow-claude-primary/25
                         hover:shadow-xl hover:shadow-claude-primary/30 hover:scale-[1.02]
                         active:scale-[0.98] transition-all duration-200"
@@ -145,18 +145,18 @@ const SessionSidebar = ({ isCollapsed, onToggleCollapse }) => {
                                 className={`w-full text-left p-3 rounded-xl flex items-center gap-3 transition-all duration-200 group
                                     ${isActive
                                         ? 'bg-claude-white shadow-md shadow-claude-secondary/20 ring-1 ring-claude-secondary/30'
-                                        : 'hover:bg-claude-white/70 hover:shadow-sm text-claude-secondary hover:text-claude-primary'
+                                        : 'hover:bg-claude-white/70 hover:shadow-sm text-claude-secondary hover:text-claude-text'
                                     }`}
                             >
                                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors duration-200
                                     ${isActive
-                                        ? 'bg-gradient-to-br from-claude-primary to-claude-primary/90 text-claude-white shadow-md shadow-claude-primary/20'
-                                        : 'bg-claude-light text-claude-secondary group-hover:bg-claude-primary/10 group-hover:text-claude-primary'
+                                        ? 'bg-gradient-to-br from-claude-primary to-claude-primary/90 text-white shadow-md shadow-claude-primary/20'
+                                        : 'bg-claude-light text-claude-secondary group-hover:bg-claude-primary/10 group-hover:text-claude-text'
                                     }`}>
                                     <MessageSquare size={14} />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <div className={`truncate text-sm font-medium ${isActive ? 'text-claude-primary' : ''}`}>
+                                    <div className={`truncate text-sm font-medium ${isActive ? 'text-claude-text' : ''}`}>
                                         {session.title || "Untitled Chat"}
                                     </div>
                                 </div>
@@ -165,8 +165,8 @@ const SessionSidebar = ({ isCollapsed, onToggleCollapse }) => {
                                         onClick={(e) => toggleMenu(sessionId, e)}
                                         className={`p-1.5 rounded-lg transition-all duration-200
                                             ${isMenuOpen
-                                                ? 'bg-claude-secondary/20 text-claude-primary'
-                                                : 'opacity-0 group-hover/item:opacity-100 text-claude-secondary hover:bg-claude-light hover:text-claude-primary'
+                                                ? 'bg-claude-secondary/20 text-claude-text'
+                                                : 'opacity-0 group-hover/item:opacity-100 text-claude-secondary hover:bg-claude-light hover:text-claude-text'
                                             }`}
                                         title="More options"
                                     >

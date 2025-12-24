@@ -172,18 +172,18 @@ const ChatWindow = () => {
             <div className="flex justify-between items-center pb-3">
                 {/* Model indicator */}
                 {selectedModel && (
-                    <div className="flex items-center gap-2 text-xs text-claude-secondary px-3 py-1.5 bg-claude-light rounded-lg border border-claude-secondary/30">
-                        <span className="font-medium text-claude-primary">Model:</span>
-                        <span className="font-mono">{selectedModel}</span>
+                    <div className="flex items-center gap-2 text-xs text-claude-secondary px-3 py-1.5 bg-claude-white rounded-lg border border-claude-secondary/30">
+                        <span className="font-medium text-claude-text">Model:</span>
+                        <span className="font-mono text-claude-text">{selectedModel}</span>
                     </div>
                 )}
                 <div className="flex justify-end">
                     <button
                         onClick={handleSquash}
                         disabled={isLoading || !activeNodeId}
-                        className="text-xs flex items-center gap-1.5 bg-claude-light
-                            text-claude-primary px-4 py-2 rounded-lg border border-claude-secondary/30
-                            hover:bg-claude-secondary/10 hover:border-claude-primary/40 hover:shadow-sm
+                        className="text-xs flex items-center gap-1.5 bg-claude-white
+                            text-claude-text px-4 py-2 rounded-lg border border-claude-secondary/30
+                            hover:bg-claude-light hover:border-claude-primary/40 hover:shadow-sm
                             transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed
                             font-medium"
                         title="Summarize current branch into a single node"
@@ -246,7 +246,7 @@ const ChatWindow = () => {
                                     focus:outline-none focus:ring-2 focus:ring-claude-primary/40 focus:border-claude-primary/60
                                     disabled:bg-claude-light disabled:text-claude-secondary
                                     resize-none shadow-sm bg-claude-white/80 backdrop-blur-sm
-                                    placeholder:text-claude-secondary text-claude-primary
+                                    placeholder:text-claude-secondary text-claude-text
                                     transition-all duration-200"
                                 rows={1}
                                 style={{ minHeight: '48px' }}
@@ -268,7 +268,7 @@ const ChatWindow = () => {
                             <div className="flex items-center shadow-lg shadow-claude-primary/20 rounded-xl overflow-hidden">
                                 <button
                                     onClick={sendMessage}
-                                    className="gradient-primary text-claude-white px-4 py-3
+                                    className="gradient-primary text-white px-4 py-3
                                         hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed
                                         flex items-center justify-center transition-all duration-200
                                         active:scale-95"
@@ -277,10 +277,10 @@ const ChatWindow = () => {
                                 >
                                     {sendMode === 'reply' ? <Send size={18} /> : <GitBranch size={18} />}
                                 </button>
-                                <div className="w-px h-6 bg-claude-primary/30"></div>
+                                <div className="w-px h-6 bg-white/30"></div>
                                 <button
                                     onClick={() => setShowDropdown(!showDropdown)}
-                                    className="gradient-primary text-claude-white px-2 py-3
+                                    className="gradient-primary text-white px-2 py-3
                                         hover:brightness-110 disabled:opacity-50
                                         flex items-center justify-center transition-all duration-200"
                                     disabled={isLoading}
@@ -296,8 +296,8 @@ const ChatWindow = () => {
                                     <button
                                         className={`w-full text-left px-3 py-2.5 text-sm rounded-lg flex items-center gap-3 transition-all duration-150
                                             ${sendMode === 'reply'
-                                                ? 'bg-claude-primary/10 text-claude-primary ring-1 ring-claude-primary/30'
-                                                : 'hover:bg-claude-light text-claude-primary'}`}
+                                                ? 'bg-claude-primary/10 text-claude-text ring-1 ring-claude-primary/30'
+                                                : 'hover:bg-claude-light text-claude-text'}`}
                                         onClick={() => { setSendMode('reply'); setShowDropdown(false); }}
                                     >
                                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center
@@ -312,8 +312,8 @@ const ChatWindow = () => {
                                     <button
                                         className={`w-full text-left px-3 py-2.5 text-sm rounded-lg flex items-center gap-3 transition-all duration-150 mt-1
                                             ${sendMode === 'branch'
-                                                ? 'bg-claude-primary/10 text-claude-primary ring-1 ring-claude-primary/30'
-                                                : 'hover:bg-claude-light text-claude-primary'}`}
+                                                ? 'bg-claude-primary/10 text-claude-text ring-1 ring-claude-primary/30'
+                                                : 'hover:bg-claude-light text-claude-text'}`}
                                         onClick={() => { setSendMode('branch'); setShowDropdown(false); }}
                                     >
                                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center
@@ -368,8 +368,8 @@ const MessageItem = ({ node, isOptimistic = false, animationDelay = 0 }) => {
                 max-w-[85%] rounded-2xl px-5 py-3.5 relative
                 transition-all duration-200
                 ${isUser
-                    ? 'bg-claude-light text-claude-primary rounded-br-sm shadow-lg shadow-claude-secondary/10 border border-claude-secondary/20'
-                    : 'bg-claude-secondary text-claude-white rounded-bl-sm shadow-lg shadow-claude-secondary/20'
+                    ? 'bg-claude-white text-claude-text rounded-br-sm shadow-lg shadow-claude-secondary/10 border border-claude-secondary/20'
+                    : 'bg-claude-primary text-white rounded-bl-sm shadow-lg shadow-claude-secondary/20'
                 }
             `}>
                 <div className={`markdown-content ${isUser ? '' : 'prose-invert'}`}>
@@ -389,7 +389,7 @@ const MessageItem = ({ node, isOptimistic = false, animationDelay = 0 }) => {
                                         {String(children).replace(/\n$/, '')}
                                     </SyntaxHighlighter>
                                 ) : (
-                                    <code className={`${className} bg-claude-primary/20 text-claude-primary px-1.5 py-0.5 rounded text-sm font-mono`} {...props}>
+                                    <code className={`${className} bg-claude-primary/20 text-claude-text px-1.5 py-0.5 rounded text-sm font-mono`} {...props}>
                                         {children}
                                     </code>
                                 )
@@ -410,9 +410,9 @@ const MessageItem = ({ node, isOptimistic = false, animationDelay = 0 }) => {
                                 hover:bg-claude-light hover:border-claude-primary/40 disabled:opacity-30
                                 transition-all duration-150 disabled:cursor-not-allowed"
                         >
-                            <ChevronLeft size={12} className="text-claude-primary" />
+                            <ChevronLeft size={12} className="text-claude-text" />
                         </button>
-                        <span className="bg-claude-white border border-claude-secondary/30 px-2.5 py-1 rounded-lg text-xs font-medium text-claude-primary shadow-sm">
+                        <span className="bg-claude-white border border-claude-secondary/30 px-2.5 py-1 rounded-lg text-xs font-medium text-claude-text shadow-sm">
                             {currentIndex + 1} / {children.length}
                         </span>
                         <button
@@ -422,7 +422,7 @@ const MessageItem = ({ node, isOptimistic = false, animationDelay = 0 }) => {
                                 hover:bg-claude-light hover:border-claude-primary/40 disabled:opacity-30
                                 transition-all duration-150 disabled:cursor-not-allowed"
                         >
-                            <ChevronRight size={12} className="text-claude-primary" />
+                            <ChevronRight size={12} className="text-claude-text" />
                         </button>
                     </div>
                 )}
