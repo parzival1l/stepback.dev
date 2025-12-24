@@ -13,14 +13,22 @@ export function useDarkMode() {
   const isDark = theme === 'dark';
 
   useEffect(() => {
-    // Update the HTML element's data-theme attribute (for existing theme)
-    document.documentElement.setAttribute('data-theme', theme);
+    const root = document.documentElement;
+    const body = document.body;
 
-    // Add/remove 'dark' class for shadcn theme
+    // Keep both <html> and <body> in sync so every descendant (including portals)
+    // picks up the correct CSS variables and system color-scheme.
+    root.setAttribute('data-theme', theme);
+    body.setAttribute('data-theme', theme);
+    root.style.colorScheme = theme;
+    body.style.colorScheme = theme;
+
     if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
+      root.classList.add('dark');
+      body.classList.add('dark');
     } else {
-      document.documentElement.classList.remove('dark');
+      root.classList.remove('dark');
+      body.classList.remove('dark');
     }
 
     // Persist in localStorage

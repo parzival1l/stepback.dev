@@ -359,6 +359,8 @@ const MessageItem = ({ node, isOptimistic = false, animationDelay = 0 }) => {
 
     if (isSystem) return null;
 
+    const bubbleClass = isUser ? 'user-bubble' : 'assistant-bubble';
+
     return (
         <div
             className={`group flex flex-col ${isUser ? 'items-end' : 'items-start'} ${isOptimistic ? 'opacity-60' : ''} animate-slide-up`}
@@ -370,9 +372,9 @@ const MessageItem = ({ node, isOptimistic = false, animationDelay = 0 }) => {
                 ${isUser
                     ? 'bg-claude-white text-claude-text rounded-br-sm shadow-lg shadow-claude-secondary/10 border border-claude-secondary/20'
                     : 'bg-claude-primary text-white rounded-bl-sm shadow-lg shadow-claude-secondary/20'
-                }
+                } ${bubbleClass}
             `}>
-                <div className={`markdown-content ${isUser ? '' : 'prose-invert'}`}>
+                <div className={`markdown-content ${isUser ? 'user-message' : 'assistant-message'}`}>
                     <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={{
@@ -383,13 +385,13 @@ const MessageItem = ({ node, isOptimistic = false, animationDelay = 0 }) => {
                                         style={vscDarkPlus}
                                         language={match[1]}
                                         PreTag="div"
-                                        className="rounded-lg text-sm my-2 !bg-claude-primary/90"
+                                        className="rounded-lg text-sm my-2"
                                         {...props}
                                     >
                                         {String(children).replace(/\n$/, '')}
                                     </SyntaxHighlighter>
                                 ) : (
-                                    <code className={`${className} bg-claude-primary/20 text-claude-text px-1.5 py-0.5 rounded text-sm font-mono`} {...props}>
+                                    <code className={className} {...props}>
                                         {children}
                                     </code>
                                 )

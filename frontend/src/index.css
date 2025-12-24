@@ -3,6 +3,7 @@
 
 /* shadcn theme variables */
 :root {
+  color-scheme: light;
   --background: oklch(0.98 0.01 95.10);
   --foreground: oklch(0.34 0.03 95.72);
   --card: oklch(0.98 0.01 95.10);
@@ -47,7 +48,9 @@
   --tracking-normal: 0em;
 }
 
-.dark {
+.dark,
+:root[data-theme="dark"] {
+  color-scheme: dark;
   --background: oklch(0.27 0.00 106.64);
   --foreground: oklch(0.81 0.01 93.01);
   --card: oklch(0.27 0.00 106.64);
@@ -206,7 +209,12 @@
 
   body {
     background: var(--claude-light);
+    color: var(--claude-text);
     min-height: 100vh;
+  }
+
+  svg {
+    color: inherit;
   }
 }
 
@@ -370,4 +378,117 @@
 
 .resize-handle:hover::after {
   background: var(--claude-primary);
+}
+
+/* Markdown content - ensure all child elements inherit text color */
+.markdown-content {
+  color: inherit;
+}
+
+.markdown-content * {
+  color: inherit;
+}
+
+.markdown-content p,
+.markdown-content li,
+.markdown-content td,
+.markdown-content th,
+.markdown-content span,
+.markdown-content strong,
+.markdown-content em,
+.markdown-content blockquote {
+  color: inherit;
+}
+
+/* Tables in markdown */
+.markdown-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5rem 0;
+}
+
+.markdown-content th,
+.markdown-content td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+
+.markdown-content th {
+  font-weight: 600;
+}
+
+/* Links in markdown */
+.markdown-content a {
+  color: inherit;
+  text-decoration: underline;
+  opacity: 0.9;
+}
+
+.markdown-content a:hover {
+  opacity: 1;
+}
+
+/* User message markdown (dark text) */
+.markdown-content.user-message code:not([class*="language-"]) {
+  background: var(--claude-primary);
+  color: white;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  font-family: ui-monospace, monospace;
+}
+
+/* Assistant message markdown (light text on primary bg) */
+.markdown-content.assistant-message code:not([class*="language-"]) {
+  background: rgba(255, 255, 255, 0.2);
+  color: inherit;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  font-family: ui-monospace, monospace;
+}
+
+/* Table borders - more visible */
+.markdown-content.assistant-message th,
+.markdown-content.assistant-message td {
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.markdown-content.user-message th,
+.markdown-content.user-message td {
+  border: 1px solid var(--border);
+}
+
+/* Lists in markdown */
+.markdown-content ul,
+.markdown-content ol {
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.markdown-content li {
+  margin: 0.25rem 0;
+}
+
+/* Headings in markdown */
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4 {
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  color: inherit;
+}
+
+/* Chat bubbles - ensure reliable contrast even if CSS vars fail to load */
+.assistant-bubble {
+  background: var(--claude-primary, #d97757);
+  color: var(--primary-foreground, #ffffff);
+  border: 1px solid var(--claude-primary, #d97757);
+}
+
+.assistant-bubble .markdown-content,
+.assistant-bubble .markdown-content * {
+  color: inherit;
 }

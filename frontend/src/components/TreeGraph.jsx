@@ -20,37 +20,37 @@ const nodeHeight = 90;
 // Custom Node for Atomic Display (User + AI)
 const CustomNode = ({ data }) => {
     return (
-        <div className={`flex flex-col rounded-xl border text-xs w-[220px] overflow-hidden cursor-pointer 
+        <div className={`flex flex-col rounded-xl border text-xs w-[220px] overflow-hidden cursor-pointer
             transition-all duration-200 backdrop-blur-sm
             ${data.active
-                ? 'ring-2 ring-blue-500 ring-offset-2 border-blue-400 shadow-xl shadow-blue-500/20 scale-105'
-                : 'border-slate-200/80 bg-white/90 shadow-lg shadow-slate-100/50 hover:shadow-xl hover:scale-[1.02] hover:border-slate-300'
+                ? 'ring-2 ring-claude-primary ring-offset-2 ring-offset-background border-claude-primary shadow-xl shadow-claude-primary/20 scale-105'
+                : 'border-border bg-card shadow-lg shadow-muted/50 hover:shadow-xl hover:scale-[1.02] hover:border-muted-foreground/50'
             }`}
         >
             {/* User Part (Top) */}
             <div className={`p-3 border-b truncate font-medium
                 ${data.active
-                    ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100 text-blue-800'
-                    : 'bg-slate-50/80 border-slate-100 text-slate-700'
+                    ? 'bg-claude-primary/10 border-claude-primary/30 text-claude-text'
+                    : 'bg-muted/50 border-border text-claude-text'
                 }`}>
                 <div className="flex items-center gap-2">
-                    <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${data.active ? 'bg-blue-500' : 'bg-slate-400'}`}></div>
+                    <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${data.active ? 'bg-claude-primary' : 'bg-muted-foreground'}`}></div>
                     <span className="truncate">{data.userContent || "(No input)"}</span>
                 </div>
             </div>
 
             {/* AI Part (Bottom) */}
-            <div className={`p-3 truncate bg-white/80
-                ${!data.aiContent ? 'italic text-slate-400' : 'text-slate-600'}
+            <div className={`p-3 truncate bg-card
+                ${!data.aiContent ? 'italic text-muted-foreground' : 'text-claude-text'}
             `}>
                 <div className="flex items-center gap-2">
-                    <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${data.aiContent ? 'bg-emerald-500' : 'bg-amber-400 animate-pulse'}`}></div>
+                    <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${data.aiContent ? 'bg-claude-primary' : 'bg-chart-5 animate-pulse'}`}></div>
                     <span className="truncate">{data.aiContent || "(Thinking...)"}</span>
                 </div>
             </div>
 
-            <Handle type="target" position={Position.Top} className="!bg-slate-400 !w-2.5 !h-2.5 !border-2 !border-white" />
-            <Handle type="source" position={Position.Bottom} className="!bg-slate-400 !w-2.5 !h-2.5 !border-2 !border-white" />
+            <Handle type="target" position={Position.Top} className="!bg-muted-foreground !w-2.5 !h-2.5 !border-2 !border-card" />
+            <Handle type="source" position={Position.Bottom} className="!bg-muted-foreground !w-2.5 !h-2.5 !border-2 !border-card" />
         </div>
     );
 };
@@ -190,9 +190,9 @@ const TreeGraphContent = () => {
                             source: targetId,
                             target: node.id,
                             type: 'smoothstep',
-                            markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' },
+                            markerEnd: { type: MarkerType.ArrowClosed, color: 'var(--muted-foreground)' },
                             animated: false,
-                            style: { stroke: '#cbd5e1', strokeWidth: 2 }
+                            style: { stroke: 'var(--border)', strokeWidth: 2 }
                         });
                     }
                 });
@@ -258,17 +258,17 @@ const TreeGraphContent = () => {
             nodeTypes={nodeTypes}
             attributionPosition="bottom-right"
             minZoom={0.1}
-            className="bg-gradient-to-br from-slate-50 to-slate-100"
+            className="bg-background"
         >
-            <Background color="#e2e8f0" gap={20} size={1} />
-            <Controls className="!bg-white/90 !border-slate-200 !shadow-lg !rounded-xl overflow-hidden" />
+            <Background color="var(--border)" gap={20} size={1} />
+            <Controls className="!bg-card/90 !border-border !shadow-lg !rounded-xl overflow-hidden [&>button]:!bg-card [&>button]:!border-border [&>button]:!text-claude-text [&>button:hover]:!bg-muted" />
         </ReactFlow>
     );
 };
 
 // Wrapper Component
 const TreeGraph = () => (
-    <div className="h-full w-full bg-gradient-to-br from-slate-50 via-white to-slate-100">
+    <div className="h-full w-full bg-background">
         <ReactFlowProvider>
             <TreeGraphContent />
         </ReactFlowProvider>
