@@ -368,11 +368,11 @@ const MessageItem = ({ node, isOptimistic = false, animationDelay = 0 }) => {
                 max-w-[85%] rounded-2xl px-5 py-3.5 relative
                 transition-all duration-200
                 ${isUser
-                    ? 'gradient-primary text-claude-white rounded-br-sm shadow-lg shadow-claude-primary/20'
-                    : 'glass border border-claude-secondary/30 text-claude-primary rounded-bl-sm shadow-lg shadow-claude-secondary/10'
+                    ? 'bg-claude-light text-claude-primary rounded-br-sm shadow-lg shadow-claude-secondary/10 border border-claude-secondary/20'
+                    : 'bg-claude-secondary text-claude-white rounded-bl-sm shadow-lg shadow-claude-secondary/20'
                 }
             `}>
-                <div className={`markdown-content ${isUser ? 'prose-invert' : ''}`}>
+                <div className={`markdown-content ${isUser ? '' : 'prose-invert'}`}>
                     <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={{
@@ -383,13 +383,13 @@ const MessageItem = ({ node, isOptimistic = false, animationDelay = 0 }) => {
                                         style={vscDarkPlus}
                                         language={match[1]}
                                         PreTag="div"
-                                        className="rounded-lg text-sm my-2 !bg-slate-900"
+                                        className="rounded-lg text-sm my-2 !bg-claude-primary/90"
                                         {...props}
                                     >
                                         {String(children).replace(/\n$/, '')}
                                     </SyntaxHighlighter>
                                 ) : (
-                                    <code className={`${className} bg-black/10 px-1.5 py-0.5 rounded text-sm font-mono`} {...props}>
+                                    <code className={`${className} bg-claude-primary/20 text-claude-primary px-1.5 py-0.5 rounded text-sm font-mono`} {...props}>
                                         {children}
                                     </code>
                                 )
