@@ -31,7 +31,6 @@ import {
     PromptInputActions,
 } from '@/components/elements/prompt-input';
 import { ArrowUpIcon, SparklesIcon, BotIcon, UserIcon } from '@/components/ui/icons';
-import { SidebarToggle } from './SessionSidebar';
 
 const ChatWindow = () => {
     const { tree, activeNodeId, setActiveNode, getLineage, getChildren, currentSessionId, loadHistory, fetchSessions, createSession, selectedModel, setSelectedModel } = useChatStore();
@@ -188,16 +187,13 @@ const ChatWindow = () => {
             <div className="flex flex-col h-full max-w-4xl mx-auto px-4 md:px-6 py-4">
                 {/* Toolbar */}
                 <div className="flex justify-between items-center pb-3 gap-3">
-                    <div className="flex items-center gap-3">
-                        <SidebarToggle />
-                        {/* Model indicator */}
-                        {selectedModel && (
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground px-3 py-1.5 bg-muted/50 rounded-lg border border-border">
-                                <SparklesIcon size={12} />
-                                <span className="font-medium">{selectedModel}</span>
-                            </div>
-                        )}
-                    </div>
+                    {/* Model indicator */}
+                    {selectedModel && (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground px-3 py-1.5 bg-muted/50 rounded-lg border border-border">
+                            <SparklesIcon size={12} />
+                            <span className="font-medium">{selectedModel}</span>
+                        </div>
+                    )}
                     <div className="flex justify-end">
                         <Tooltip>
                             <TooltipTrigger asChild>

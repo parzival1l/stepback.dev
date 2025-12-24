@@ -117,7 +117,7 @@ const SessionSidebar = () => {
     };
 
     return (
-        <Sidebar>
+        <Sidebar collapsible="offcanvas">
             <SidebarHeader className="p-3">
                 <Button
                     onClick={handleCreateSession}

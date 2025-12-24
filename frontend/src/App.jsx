@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import ChatWindow from './components/ChatWindow';
-import SessionSidebar from './components/SessionSidebar';
+import SessionSidebar, { SidebarToggle } from './components/SessionSidebar';
 import TreeGraph from './components/TreeGraph';
 import AuthGate from './components/AuthGate';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -33,7 +33,10 @@ function AppContent() {
           <SidebarInset className="flex flex-col overflow-hidden">
             {/* Header */}
             <header className="border-b border-border px-4 py-3 flex items-center justify-between bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shrink-0 z-20">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                {/* Sidebar Toggle - Far Left */}
+                <SidebarToggle />
+
                 {/* Logo */}
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-sm">
