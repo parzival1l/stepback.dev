@@ -3,12 +3,12 @@
 # Ensure we are in the script's directory (Project Root)
 cd "$(dirname "$0")"
 
-echo "🚀 Starting TreeChat..."
+echo "🚀 Starting stepback.dev..."
 
 # 1. Start Backend
 echo "🐍 Launching Backend..."
-if [ -d "venv" ]; then
-    source venv/bin/activate
+if [ -d "stepback_env" ]; then
+    source stepback_env/bin/activate
 else
     echo "⚠️  Virtual environment not found. Please run:"
     echo "   python3 -m venv venv"

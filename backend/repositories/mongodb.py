@@ -143,7 +143,7 @@ class MongoDatabase(DatabaseRepository):
         """Initialize MongoDB connection"""
         mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017")
         self.client = AsyncIOMotorClient(mongo_uri)
-        db_name = os.getenv("DB_NAME", "treechat")
+        db_name = os.getenv("DB_NAME", "stepback")
         await init_beanie(
             database=self.client[db_name],
             document_models=[ChatNode, Session]

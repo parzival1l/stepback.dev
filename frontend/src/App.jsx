@@ -20,7 +20,7 @@ function App() {
             </div>
             <div>
               <h1 className="text-lg font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                TreeChat
+                stepback.dev
               </h1>
               <div className="text-[10px] font-medium text-slate-400 tracking-wide uppercase">
                 Git-Style LLM Interface
@@ -58,7 +58,7 @@ function App() {
 
       {/* Main Content with Resizable Panels */}
       <div className="flex-1 overflow-hidden">
-        <PanelGroup direction="horizontal" autoSaveId="treechat-layout">
+        <PanelGroup direction="horizontal" autoSaveId="stepback-layout">
           {/* Sidebar Panel */}
           <Panel
             defaultSize={20}

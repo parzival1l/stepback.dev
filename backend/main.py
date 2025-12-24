@@ -19,7 +19,7 @@ async def lifespan(app: FastAPI):
     yield
     await close_db()
 
-app = FastAPI(title="TreeChat API", lifespan=lifespan)
+app = FastAPI(title="stepback.dev API", lifespan=lifespan)
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -33,7 +33,7 @@ app.add_middleware(
 
 @app.get("/")
 async def root():
-    return {"message": "TreeChat Backend is Running"}
+    return {"message": "stepback.dev Backend is Running"}
 
 @app.get("/models")
 async def get_models():
