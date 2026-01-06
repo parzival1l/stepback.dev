@@ -1,12 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, ChevronDown } from 'lucide-react';
+import { Sparkles, Check } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 const API_URL = "http://localhost:8000";
 
 const ModelSelector = ({ selectedModel, onModelSelect, onStart }) => {
     const [models, setModels] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [showDropdown, setShowDropdown] = useState(false);
 
     useEffect(() => {
         fetchModels();
@@ -34,9 +43,9 @@ const ModelSelector = ({ selectedModel, onModelSelect, onStart }) => {
         return (
             <div className="flex items-center justify-center p-8">
                 <div className="flex gap-2">
-                    <span className="w-2 h-2 bg-claude-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                    <span className="w-2 h-2 bg-claude-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                    <span className="w-2 h-2 bg-claude-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                    <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                    <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                    <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
                 </div>
             </div>
         );
@@ -44,97 +53,79 @@ const ModelSelector = ({ selectedModel, onModelSelect, onStart }) => {
 
     return (
         <div className="flex flex-col items-center justify-center min-h-[400px] px-6 py-8">
-            <div className="w-full max-w-md space-y-6">
-                {/* Header */}
-                <div className="text-center space-y-2">
-                    <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center shadow-lg shadow-claude-primary/20 mx-auto mb-4">
-                        <Sparkles size={28} className="text-white" />
+            <Card className="w-full max-w-md border-border/50 shadow-xl">
+                <CardHeader className="text-center space-y-4 pb-2">
+                    <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center shadow-lg mx-auto">
+                        <Sparkles size={28} className="text-primary-foreground" />
                     </div>
-                    <h2 className="text-2xl font-bold text-claude-text">
-                        Choose Your Model
-                    </h2>
-                    <p className="text-sm text-claude-secondary">
-                        Select an AI model to start your conversation
-                    </p>
-                </div>
+                    <div>
+                        <CardTitle className="text-2xl">Choose Your Model</CardTitle>
+                        <CardDescription className="mt-2">
+                            Select an AI model to start your conversation
+                        </CardDescription>
+                    </div>
+                </CardHeader>
 
-                {/* Model Selector */}
-                <div className="relative">
-                    <button
-                        onClick={() => setShowDropdown(!showDropdown)}
-                        className="w-full bg-claude-white/80 backdrop-blur-sm border border-claude-secondary/40 rounded-xl px-4 py-3.5
-                            flex items-center justify-between shadow-sm hover:shadow-md hover:border-claude-primary/40
-                            transition-all duration-200 text-left"
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-claude-primary/10 flex items-center justify-center">
-                                <Sparkles size={18} className="text-claude-primary" />
-                            </div>
-                            <div>
-                                <div className="font-semibold text-claude-text">
-                                    {selectedModelConfig?.name || "Select a model"}
+                <CardContent className="space-y-6 pt-4">
+                    {/* Model Selector using shadcn Select */}
+                    <Select value={selectedModel} onValueChange={onModelSelect}>
+                        <SelectTrigger className="w-full h-auto py-3 px-4 rounded-xl">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                                    <Sparkles size={18} className="text-primary" />
                                 </div>
-                                <div className="text-xs text-claude-secondary">
-                                    {selectedModelConfig?.description || ""}
+                                <div className="text-left">
+                                    <SelectValue placeholder="Select a model">
+                                        {selectedModelConfig ? (
+                                            <>
+                                                <div className="font-semibold">{selectedModelConfig.name}</div>
+                                                <div className="text-xs text-muted-foreground">{selectedModelConfig.description}</div>
+                                            </>
+                                        ) : (
+                                            "Select a model"
+                                        )}
+                                    </SelectValue>
                                 </div>
                             </div>
-                        </div>
-                        <ChevronDown
-                            size={18}
-                            className={`text-claude-secondary transition-transform duration-200 ${showDropdown ? 'rotate-180' : ''}`}
-                        />
-                    </button>
-
-                    {/* Dropdown */}
-                    {showDropdown && (
-                        <div className="absolute top-full left-0 right-0 mt-2 bg-claude-white/95 backdrop-blur-xl shadow-2xl shadow-claude-secondary/20
-                            border border-claude-secondary/30 rounded-xl overflow-hidden z-20 animate-slide-in-from-bottom">
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
                             {models.map((model) => (
-                                <button
+                                <SelectItem
                                     key={model.id}
-                                    onClick={() => {
-                                        onModelSelect(model.id);
-                                        setShowDropdown(false);
-                                    }}
-                                    className={`w-full text-left px-4 py-3.5 flex items-center gap-3 transition-all duration-150
-                                        ${selectedModel === model.id
-                                            ? 'bg-claude-primary/10 text-claude-text ring-1 ring-claude-primary/30'
-                                            : 'hover:bg-claude-light text-claude-text'
-                                        }`}
+                                    value={model.id}
+                                    className="py-3 px-3 rounded-lg cursor-pointer"
                                 >
-                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center
-                                        ${selectedModel === model.id ? 'bg-claude-primary/20' : 'bg-claude-light'}`}>
-                                        <Sparkles size={18} className={selectedModel === model.id ? 'text-claude-primary' : 'text-claude-secondary'} />
+                                    <div className="flex items-center gap-3">
+                                        <div className={cn(
+                                            "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
+                                            selectedModel === model.id ? "bg-primary/20" : "bg-muted"
+                                        )}>
+                                            <Sparkles size={18} className={selectedModel === model.id ? "text-primary" : "text-muted-foreground"} />
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="font-semibold">{model.name}</div>
+                                            <div className="text-xs text-muted-foreground mt-0.5">{model.description}</div>
+                                        </div>
                                     </div>
-                                    <div className="flex-1">
-                                        <div className="font-semibold">{model.name}</div>
-                                        <div className="text-xs text-claude-secondary mt-0.5">{model.description}</div>
-                                    </div>
-                                    {selectedModel === model.id && (
-                                        <div className="w-2 h-2 rounded-full bg-claude-primary"></div>
-                                    )}
-                                </button>
+                                </SelectItem>
                             ))}
-                        </div>
-                    )}
-                </div>
+                        </SelectContent>
+                    </Select>
 
-                {/* Start Button */}
-                {selectedModel && (
-                    <button
-                        onClick={onStart}
-                        className="w-full gradient-primary text-white px-6 py-3.5 rounded-xl
-                            font-semibold shadow-lg shadow-claude-primary/20
-                            hover:brightness-110 active:scale-95
-                            transition-all duration-200"
-                    >
-                        Start Chatting
-                    </button>
-                )}
-            </div>
+                    {/* Start Button */}
+                    {selectedModel && (
+                        <Button
+                            onClick={onStart}
+                            className="w-full py-6 rounded-xl text-base font-semibold shadow-lg"
+                            size="lg"
+                        >
+                            Start Chatting
+                        </Button>
+                    )}
+                </CardContent>
+            </Card>
         </div>
     );
 };
 
 export default ModelSelector;
-

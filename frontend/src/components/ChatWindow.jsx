@@ -1,26 +1,50 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback, memo } from 'react';
 import { useChatStore } from '../store';
-import { Send, ChevronLeft, ChevronRight, GitMerge, GitBranch, ChevronDown, ListTree } from 'lucide-react';
+import { ChevronLeft, ChevronRight, GitMerge, GitBranch, ChevronDown, Send, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import remarkGfm from 'remark-gfm';
 import ModelSelector from './ModelSelector';
 import { api } from '../utils/apiClient';
+import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
+import {
+    PromptInput,
+    PromptInputTextarea,
+    PromptInputToolbar,
+    PromptInputTools,
+    PromptInputSubmit,
+    PromptInputActions,
+} from '@/components/elements/prompt-input';
+import { ArrowUpIcon, SparklesIcon, BotIcon, UserIcon } from '@/components/ui/icons';
 
 const ChatWindow = () => {
     const { tree, activeNodeId, setActiveNode, getLineage, getChildren, currentSessionId, loadHistory, fetchSessions, createSession, selectedModel, setSelectedModel } = useChatStore();
     const lineage = getLineage();
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-    const [sendMode, setSendMode] = useState('reply'); // 'reply' (child) or 'branch' (sibling)
-    const [showDropdown, setShowDropdown] = useState(false);
+    const [sendMode, setSendMode] = useState('reply');
     const [showModelSelector, setShowModelSelector] = useState(false);
 
     // Optimistic UI state
     const [optimisticMessage, setOptimisticMessage] = useState(null);
 
     const messagesEndRef = useRef(null);
+    const textareaRef = useRef(null);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -39,6 +63,13 @@ const ChatWindow = () => {
         }
     }, [currentSessionId, selectedModel]);
 
+    // Auto-focus textarea
+    useEffect(() => {
+        if (!showModelSelector && textareaRef.current) {
+            textareaRef.current.focus();
+        }
+    }, [showModelSelector]);
+
     const activeNode = tree[activeNodeId];
 
     const handleModelSelect = (modelId) => {
@@ -47,7 +78,6 @@ const ChatWindow = () => {
 
     const handleStartChatting = async () => {
         if (!selectedModel) return;
-        // Create a session if one doesn't exist
         if (!currentSessionId) {
             const sessionId = await createSession();
             if (sessionId) {
@@ -59,29 +89,26 @@ const ChatWindow = () => {
     };
 
     // Handle Sending Message
-    const sendMessage = async () => {
+    const sendMessage = useCallback(async () => {
         if (!input.trim() || isLoading) return;
 
         let sessionId = currentSessionId;
         if (!sessionId) {
             sessionId = await createSession();
-            if (!sessionId) return; // Failed to create
+            if (!sessionId) return;
         }
 
         const messageContent = input;
         const mode = sendMode;
 
-        // Determine parent_id based on mode
         let parentId = activeNodeId;
         if (mode === 'branch' && activeNode && activeNode.parent_id) {
             parentId = activeNode.parent_id;
         }
 
-        setInput(""); // Clear input
-        setShowDropdown(false);
+        setInput("");
         setIsLoading(true);
 
-        // precise optimistic rendering
         setOptimisticMessage({
             id: 'temp-optimistic',
             role: 'user',
@@ -104,22 +131,20 @@ const ChatWindow = () => {
                 const historyNodes = await historyRes.json();
                 loadHistory(historyNodes, data.assistant_node._id || data.assistant_node.id);
 
-                // Refresh sessions to catch any title updates
                 if (useChatStore.getState().fetchSessions) {
                     useChatStore.getState().fetchSessions();
                 }
-                // Always signal graph refresh
                 window.dispatchEvent(new Event('session-updated'));
             }
 
         } catch (err) {
             console.error(err);
-            setInput(messageContent); // Restore on error
+            setInput(messageContent);
         } finally {
             setIsLoading(false);
             setOptimisticMessage(null);
         }
-    };
+    }, [input, isLoading, currentSessionId, sendMode, activeNodeId, activeNode, selectedModel, createSession, loadHistory]);
 
     const handleSquash = async () => {
         if (!activeNodeId || isLoading) return;
@@ -158,182 +183,179 @@ const ChatWindow = () => {
     }
 
     return (
-        <div className="flex flex-col h-full max-w-4xl mx-auto px-6 py-4">
-            {/* Toolbar */}
-            <div className="flex justify-between items-center pb-3">
-                {/* Model indicator */}
-                {selectedModel && (
-                    <div className="flex items-center gap-2 text-xs text-claude-secondary px-3 py-1.5 bg-claude-white rounded-lg border border-claude-secondary/30">
-                        <span className="font-medium text-claude-text">Model:</span>
-                        <span className="font-mono text-claude-text">{selectedModel}</span>
-                    </div>
-                )}
-                <div className="flex justify-end">
-                    <button
-                        onClick={handleSquash}
-                        disabled={isLoading || !activeNodeId}
-                        className="text-xs flex items-center gap-1.5 bg-claude-white
-                            text-claude-text px-4 py-2 rounded-lg border border-claude-secondary/30
-                            hover:bg-claude-light hover:border-claude-primary/40 hover:shadow-sm
-                            transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed
-                            font-medium"
-                        title="Summarize current branch into a single node"
-                    >
-                        <GitMerge size={14} />
-                        Squash / Summarize
-                    </button>
-                </div>
-            </div>
-
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto space-y-6 pb-4 scroll-smooth pr-2">
-                {lineage.map((node, index) => (
-                    <MessageItem key={node._id || node.id} node={node} animationDelay={index * 50} />
-                ))}
-
-                {/* Optimistic Message Display */}
-                {optimisticMessage && (
-                    <MessageItem key="optimistic" node={optimisticMessage} isOptimistic={true} />
-                )}
-
-                {/* Loading indicator */}
-                {isLoading && (
-                    <div className="flex justify-start animate-slide-up">
-                        <div className="glass rounded-2xl rounded-bl-sm px-5 py-4 flex items-center gap-3 shadow-lg shadow-claude-secondary/10 border border-claude-secondary/30">
-                            <div className="flex gap-1">
-                                <span className="w-2 h-2 bg-claude-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                                <span className="w-2 h-2 bg-claude-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                                <span className="w-2 h-2 bg-claude-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
-                            </div>
-                            <span className="text-sm font-medium text-claude-secondary">Thinking...</span>
+        <TooltipProvider>
+            <div className="flex flex-col h-full max-w-4xl mx-auto px-4 md:px-6 py-4">
+                {/* Toolbar */}
+                <div className="flex justify-between items-center pb-3 gap-3">
+                    {/* Model indicator */}
+                    {selectedModel && (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground px-3 py-1.5 bg-muted/50 rounded-lg border border-border">
+                            <SparklesIcon size={12} />
+                            <span className="font-medium">{selectedModel}</span>
                         </div>
+                    )}
+                    <div className="flex justify-end">
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleSquash}
+                                    disabled={isLoading || !activeNodeId}
+                                    className="gap-1.5 h-8"
+                                >
+                                    <GitMerge size={14} />
+                                    <span className="hidden sm:inline">Squash</span>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Summarize current branch into a single node</p>
+                            </TooltipContent>
+                        </Tooltip>
                     </div>
-                )}
+                </div>
 
-                <div ref={messagesEndRef} />
-            </div>
+                {/* Messages */}
+                <ScrollArea className="flex-1 pb-4 pr-2">
+                    <div className="space-y-6">
+                        {lineage.map((node, index) => (
+                            <MessageItem key={node._id || node.id} node={node} animationDelay={index * 50} />
+                        ))}
 
-            {/* Input Area */}
-            <div className="border-t border-claude-secondary/30 pt-4 mt-2">
-                <div className="flex flex-col gap-2.5">
+                        {/* Optimistic Message Display */}
+                        {optimisticMessage && (
+                            <MessageItem key="optimistic" node={optimisticMessage} isOptimistic={true} />
+                        )}
+
+                        {/* Loading indicator */}
+                        {isLoading && (
+                            <div className="flex justify-start animate-slide-up">
+                                <div className="flex items-center gap-3 px-4 py-3 rounded-2xl rounded-bl-sm bg-muted/50 border border-border shadow-sm">
+                                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10">
+                                        <BotIcon size={14} className="text-primary" />
+                                    </div>
+                                    <div className="flex gap-1.5">
+                                        <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                                        <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                                        <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div ref={messagesEndRef} />
+                    </div>
+                </ScrollArea>
+
+                {/* Input Area */}
+                <div className="pt-4 mt-2">
                     {/* Branch Context Info */}
                     {activeNodeId && (
-                        <div className="flex items-center gap-2 text-xs text-claude-secondary px-1">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground px-1 mb-2">
                             <GitBranch size={12} />
                             <span>
                                 {sendMode === 'reply' ? 'Extending' : 'Branching off parent of'}:
-                                <span className="font-mono bg-claude-light px-1.5 py-0.5 rounded text-claude-primary ml-1">
+                                <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-foreground ml-1">
                                     {String(activeNodeId).slice(-6)}
                                 </span>
                             </span>
                         </div>
                     )}
 
-                    <div className="flex gap-3 items-end">
-                        {/* Input */}
-                        <div className="flex-1 relative">
-                            <textarea
-                                className="w-full border border-claude-secondary/40 rounded-xl px-4 py-3
-                                    focus:outline-none focus:ring-2 focus:ring-claude-primary/40 focus:border-claude-primary/60
-                                    disabled:bg-claude-light disabled:text-claude-secondary
-                                    resize-none shadow-sm bg-claude-white/80 backdrop-blur-sm
-                                    placeholder:text-claude-secondary text-claude-text
-                                    transition-all duration-200"
-                                rows={1}
-                                style={{ minHeight: '48px' }}
-                                value={input}
-                                onChange={(e) => setInput(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault();
-                                        sendMessage();
-                                    }
-                                }}
-                                placeholder={sendMode === 'reply' ? "Type a message..." : "Type to start new branch..."}
-                                disabled={isLoading}
-                            />
-                        </div>
-
-                        {/* Split Button for Send/Branch */}
-                        <div className="relative flex flex-col items-end">
-                            <div className="flex items-center shadow-lg shadow-claude-primary/20 rounded-xl overflow-hidden">
-                                <button
-                                    onClick={sendMessage}
-                                    className="gradient-primary text-white px-4 py-3
-                                        hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed
-                                        flex items-center justify-center transition-all duration-200
-                                        active:scale-95"
-                                    disabled={!input.trim() || isLoading}
-                                    title={sendMode === 'reply' ? "Send Message" : "Create New Branch"}
-                                >
-                                    {sendMode === 'reply' ? <Send size={18} /> : <GitBranch size={18} />}
-                                </button>
-                                <div className="w-px h-6 bg-white/30"></div>
-                                <button
-                                    onClick={() => setShowDropdown(!showDropdown)}
-                                    className="gradient-primary text-white px-2 py-3
-                                        hover:brightness-110 disabled:opacity-50
-                                        flex items-center justify-center transition-all duration-200"
-                                    disabled={isLoading}
-                                >
-                                    <ChevronDown size={16} className={`transition-transform duration-200 ${showDropdown ? 'rotate-180' : ''}`} />
-                                </button>
-                            </div>
-
-                            {/* Dropdown Menu */}
-                            {showDropdown && (
-                                <div className="absolute bottom-14 right-0 bg-claude-white/95 backdrop-blur-xl shadow-2xl shadow-claude-secondary/20
-                                    border border-claude-secondary/30 rounded-xl p-1.5 min-w-[220px] z-20 animate-slide-in-from-bottom">
-                                    <button
-                                        className={`w-full text-left px-3 py-2.5 text-sm rounded-lg flex items-center gap-3 transition-all duration-150
-                                            ${sendMode === 'reply'
-                                                ? 'bg-claude-primary/10 text-claude-text ring-1 ring-claude-primary/30'
-                                                : 'hover:bg-claude-light text-claude-text'}`}
-                                        onClick={() => { setSendMode('reply'); setShowDropdown(false); }}
-                                    >
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center
-                                            ${sendMode === 'reply' ? 'bg-claude-primary/20' : 'bg-claude-light'}`}>
+                    <PromptInput
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            if (!isLoading) {
+                                sendMessage();
+                            }
+                        }}
+                    >
+                        <PromptInputTextarea
+                            ref={textareaRef}
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            placeholder={sendMode === 'reply' ? "Send a message..." : "Type to start new branch..."}
+                            disabled={isLoading}
+                            className="min-h-[52px] text-base"
+                        />
+                        <PromptInputToolbar>
+                            <PromptInputTools>
+                                {/* Send Mode Toggle */}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 gap-1.5 text-muted-foreground hover:text-foreground"
+                                            disabled={isLoading}
+                                        >
+                                            {sendMode === 'reply' ? (
+                                                <>
+                                                    <Send size={14} />
+                                                    <span className="text-xs">Reply</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <GitBranch size={14} />
+                                                    <span className="text-xs">Branch</span>
+                                                </>
+                                            )}
+                                            <ChevronDown size={12} />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start" className="w-[200px]">
+                                        <DropdownMenuItem
+                                            onClick={() => setSendMode('reply')}
+                                            className={cn(
+                                                "flex items-center gap-3 p-2.5 cursor-pointer",
+                                                sendMode === 'reply' && "bg-accent"
+                                            )}
+                                        >
                                             <Send size={14} />
-                                        </div>
-                                        <div>
-                                            <div className="font-semibold">Reply</div>
-                                            <div className="text-xs text-claude-secondary">Continue this conversation</div>
-                                        </div>
-                                    </button>
-                                    <button
-                                        className={`w-full text-left px-3 py-2.5 text-sm rounded-lg flex items-center gap-3 transition-all duration-150 mt-1
-                                            ${sendMode === 'branch'
-                                                ? 'bg-claude-primary/10 text-claude-text ring-1 ring-claude-primary/30'
-                                                : 'hover:bg-claude-light text-claude-text'}`}
-                                        onClick={() => { setSendMode('branch'); setShowDropdown(false); }}
-                                    >
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center
-                                            ${sendMode === 'branch' ? 'bg-claude-primary/20' : 'bg-claude-light'}`}>
+                                            <div className="flex-1">
+                                                <div className="font-medium text-sm">Reply</div>
+                                                <div className="text-xs text-muted-foreground">Continue conversation</div>
+                                            </div>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onClick={() => setSendMode('branch')}
+                                            className={cn(
+                                                "flex items-center gap-3 p-2.5 cursor-pointer",
+                                                sendMode === 'branch' && "bg-accent"
+                                            )}
+                                        >
                                             <GitBranch size={14} />
-                                        </div>
-                                        <div>
-                                            <div className="font-semibold">New Branch</div>
-                                            <div className="text-xs text-claude-secondary">Split from previous node</div>
-                                        </div>
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                                            <div className="flex-1">
+                                                <div className="font-medium text-sm">New Branch</div>
+                                                <div className="text-xs text-muted-foreground">Split from previous</div>
+                                            </div>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </PromptInputTools>
+
+                            <PromptInputActions>
+                                <PromptInputSubmit
+                                    disabled={!input.trim() || isLoading}
+                                    status={isLoading ? "loading" : "ready"}
+                                    className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground"
+                                >
+                                    <ArrowUpIcon size={16} />
+                                </PromptInputSubmit>
+                            </PromptInputActions>
+                        </PromptInputToolbar>
+                    </PromptInput>
                 </div>
             </div>
-        </div>
+        </TooltipProvider>
     );
 };
 
 // Sub-component for individual message
-const MessageItem = ({ node, isOptimistic = false, animationDelay = 0 }) => {
+const MessageItem = memo(({ node, isOptimistic = false, animationDelay = 0 }) => {
     const { setActiveNode, getChildren } = useChatStore();
 
-    // Safety check for getChildren
     const children = node.parent_id && !isOptimistic ? getChildren(node.parent_id) : [];
-
-    // Find index of current node among siblings
     const currentIndex = children.findIndex(n => (n._id || n.id) === (node._id || node.id));
     const hasSiblings = children.length > 1 && !isOptimistic;
 
@@ -350,79 +372,108 @@ const MessageItem = ({ node, isOptimistic = false, animationDelay = 0 }) => {
 
     if (isSystem) return null;
 
-    const bubbleClass = isUser ? 'user-bubble' : 'assistant-bubble';
-
     return (
         <div
-            className={`group flex flex-col ${isUser ? 'items-end' : 'items-start'} ${isOptimistic ? 'opacity-60' : ''} animate-slide-up`}
+            className={cn(
+                "group flex gap-3 animate-slide-up",
+                isUser ? "flex-row-reverse" : "flex-row",
+                isOptimistic && "opacity-60"
+            )}
             style={{ animationDelay: `${animationDelay}ms` }}
         >
-            <div className={`
-                max-w-[85%] rounded-2xl px-5 py-3.5 relative
-                transition-all duration-200
-                ${isUser
-                    ? 'bg-claude-white text-claude-text rounded-br-sm shadow-lg shadow-claude-secondary/10 border border-claude-secondary/20'
-                    : 'bg-claude-primary text-white rounded-bl-sm shadow-lg shadow-claude-secondary/20'
-                } ${bubbleClass}
-            `}>
-                <div className={`markdown-content ${isUser ? 'user-message' : 'assistant-message'}`}>
-                    <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        components={{
-                            code({ node, inline, className, children, ...props }) {
-                                const match = /language-(\w+)/.exec(className || '')
-                                return !inline && match ? (
-                                    <SyntaxHighlighter
-                                        style={vscDarkPlus}
-                                        language={match[1]}
-                                        PreTag="div"
-                                        className="rounded-lg text-sm my-2"
-                                        {...props}
-                                    >
-                                        {String(children).replace(/\n$/, '')}
-                                    </SyntaxHighlighter>
-                                ) : (
-                                    <code className={className} {...props}>
-                                        {children}
-                                    </code>
-                                )
-                            }
-                        }}
-                    >
-                        {node.content}
-                    </ReactMarkdown>
+            {/* Avatar */}
+            <div className={cn(
+                "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-0.5",
+                isUser
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted border border-border"
+            )}>
+                {isUser ? <UserIcon size={14} /> : <BotIcon size={14} />}
+            </div>
+
+            {/* Message Content */}
+            <div className={cn(
+                "flex flex-col max-w-[85%] relative",
+                isUser ? "items-end" : "items-start"
+            )}>
+                <div className={cn(
+                    "rounded-2xl px-4 py-3 transition-all duration-200",
+                    isUser
+                        ? "bg-primary text-primary-foreground rounded-br-sm"
+                        : "bg-muted/50 border border-border rounded-bl-sm"
+                )}>
+                    <div className={cn(
+                        "markdown-content prose prose-sm max-w-none",
+                        isUser
+                            ? "prose-invert"
+                            : "prose-neutral dark:prose-invert"
+                    )}>
+                        <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                                code({ node, inline, className, children, ...props }) {
+                                    const match = /language-(\w+)/.exec(className || '')
+                                    return !inline && match ? (
+                                        <SyntaxHighlighter
+                                            style={vscDarkPlus}
+                                            language={match[1]}
+                                            PreTag="div"
+                                            className="rounded-lg text-sm my-2 !bg-[#1e1e1e]"
+                                            {...props}
+                                        >
+                                            {String(children).replace(/\n$/, '')}
+                                        </SyntaxHighlighter>
+                                    ) : (
+                                        <code className={cn("bg-muted/50 px-1.5 py-0.5 rounded text-sm", className)} {...props}>
+                                            {children}
+                                        </code>
+                                    )
+                                }
+                            }}
+                        >
+                            {node.content}
+                        </ReactMarkdown>
+                    </div>
                 </div>
 
-                {/* Branch Navigation Overlay */}
+                {/* Branch Navigation */}
                 {hasSiblings && (
-                    <div className="absolute -bottom-7 left-0 right-0 flex justify-center gap-1 items-center">
-                        <button
+                    <div className="flex items-center gap-1 mt-2">
+                        <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={handlePrev}
                             disabled={currentIndex === 0}
-                            className="p-1.5 rounded-lg bg-claude-white border border-claude-secondary/30 shadow-sm
-                                hover:bg-claude-light hover:border-claude-primary/40 disabled:opacity-30
-                                transition-all duration-150 disabled:cursor-not-allowed"
+                            className="h-6 w-6"
                         >
-                            <ChevronLeft size={12} className="text-claude-text" />
-                        </button>
-                        <span className="bg-claude-white border border-claude-secondary/30 px-2.5 py-1 rounded-lg text-xs font-medium text-claude-text shadow-sm">
+                            <ChevronLeft size={12} />
+                        </Button>
+                        <span className="text-xs font-medium text-muted-foreground px-2 py-0.5 bg-muted rounded">
                             {currentIndex + 1} / {children.length}
                         </span>
-                        <button
+                        <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={handleNext}
                             disabled={currentIndex === children.length - 1}
-                            className="p-1.5 rounded-lg bg-claude-white border border-claude-secondary/30 shadow-sm
-                                hover:bg-claude-light hover:border-claude-primary/40 disabled:opacity-30
-                                transition-all duration-150 disabled:cursor-not-allowed"
+                            className="h-6 w-6"
                         >
-                            <ChevronRight size={12} className="text-claude-text" />
-                        </button>
+                            <ChevronRight size={12} />
+                        </Button>
                     </div>
                 )}
+
+                {isOptimistic && (
+                    <span className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                        <Loader2 size={10} className="animate-spin" />
+                        Sending...
+                    </span>
+                )}
             </div>
-            {isOptimistic && <div className="text-xs text-claude-secondary mt-1.5 mr-2 font-medium">Sending...</div>}
         </div>
     );
-};
+});
+
+MessageItem.displayName = 'MessageItem';
 
 export default ChatWindow;
