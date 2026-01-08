@@ -1,6 +1,6 @@
 # stepback.dev
 
-A git-style conversational AI application that lets you branch off during any chat to ask tangential questions without polluting your main conversation context. Unlike traditional linear chat interfaces, stepback.dev enables you to create branches for side explorations, work through them for any number of turns, then compact and merge them back into your original conversation thread. This level of fine-grained context control and branching is not available in any other chat system.
+A git-style conversational AI application that lets you branch off during any chat to ask tangential questions without polluting your main conversation context. Unlike traditional linear chat interfaces, stepback.dev enables you to create branches for side explorations, work through them for any number of turns, then compact and merge them back into your original conversation thread. This level of fine-grained context control and branching is not available in any other chat system
 
 **Website:** [www.stepback.dev](https://www.stepback.dev) (work in progress)
 **Contact:** [hello@stepback.dev](mailto:hello@stepback.dev)
