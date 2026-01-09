@@ -403,7 +403,7 @@ const MessageItem = memo(({ node, isOptimistic = false, animationDelay = 0 }) =>
                         : "bg-muted/50 border border-border rounded-bl-sm"
                 )}>
                     <div className={cn(
-                        "markdown-content prose prose-sm max-w-none",
+                        "markdown-content prose prose-sm max-w-none break-words",
                         isUser
                             ? "prose-invert"
                             : "prose-neutral dark:prose-invert"
@@ -414,17 +414,20 @@ const MessageItem = memo(({ node, isOptimistic = false, animationDelay = 0 }) =>
                                 code({ node, inline, className, children, ...props }) {
                                     const match = /language-(\w+)/.exec(className || '')
                                     return !inline && match ? (
-                                        <SyntaxHighlighter
-                                            style={vscDarkPlus}
-                                            language={match[1]}
-                                            PreTag="div"
-                                            className="rounded-lg text-sm my-2 !bg-[#1e1e1e]"
-                                            {...props}
-                                        >
-                                            {String(children).replace(/\n$/, '')}
-                                        </SyntaxHighlighter>
+                                        <div className="overflow-x-auto max-w-full">
+                                            <SyntaxHighlighter
+                                                style={vscDarkPlus}
+                                                language={match[1]}
+                                                PreTag="div"
+                                                className="rounded-lg text-sm my-2 !bg-[#1e1e1e]"
+                                                wrapLongLines={false}
+                                                {...props}
+                                            >
+                                                {String(children).replace(/\n$/, '')}
+                                            </SyntaxHighlighter>
+                                        </div>
                                     ) : (
-                                        <code className={cn("bg-muted/50 px-1.5 py-0.5 rounded text-sm", className)} {...props}>
+                                        <code className={cn("bg-muted/50 px-1.5 py-0.5 rounded text-sm break-all", className)} {...props}>
                                             {children}
                                         </code>
                                     )

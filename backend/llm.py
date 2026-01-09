@@ -1,5 +1,6 @@
 import os
 import json
+import asyncio
 import google.generativeai as genai
 from openai import OpenAI
 from typing import List, Dict, Optional
@@ -106,7 +107,6 @@ class LLMService:
         messages.append({"role": "user", "content": current_message})
 
         try:
-            import asyncio
             loop = asyncio.get_event_loop()
             completion = await loop.run_in_executor(
                 None,
